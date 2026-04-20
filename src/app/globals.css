@@ -1,0 +1,547 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ============================================
+   MASJID DISPLAY - Font Utilities
+   ============================================ */
+.font-cinzel { font-family: 'Cinzel', serif; }
+.font-amiri { font-family: 'Amiri', serif; }
+.font-cormorant { font-family: 'Cormorant Garamond', serif; }
+.font-orbitron { font-family: 'Orbitron', monospace; }
+.font-rajdhani { font-family: 'Rajdhani', sans-serif; }
+.font-teko { font-family: 'Teko', sans-serif; }
+.font-monoton { font-family: 'Monoton', cursive; }
+.font-playfair { font-family: 'Playfair Display', serif; }
+.font-tajawal { font-family: 'Tajawal', sans-serif; }
+
+/* ============================================
+   MASJID DISPLAY - TV Screen Container
+   ============================================ */
+.tv-screen {
+  --accent-gold: #C9A84C;
+  --accent-light: #E8D48B;
+  --prayer-card-bg: rgba(201, 168, 76, 0.08);
+  --prayer-card-border: rgba(201, 168, 76, 0.2);
+  --sidebar-width: 38%;
+  --digital-font-size: 6.5rem;
+  --running-speed: 25s;
+
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background: #050505;
+  color: #ffffff;
+}
+
+@media (min-width: 1024px) {
+  .tv-screen {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* ============================================
+   MASJID DISPLAY - Themes
+   ============================================ */
+.theme-haramain {
+  --accent-gold: #C9A84C;
+  --accent-light: #E8D48B;
+  background: linear-gradient(135deg, #0a0806 0%, #0f0d08 30%, #151210 60%, #0a0806 100%);
+}
+.theme-haramain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(201, 168, 76, 0.06) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.theme-ottoman {
+  --accent-gold: #08D9D6;
+  --accent-light: #4EEAEA;
+  background: linear-gradient(135deg, #060d0d 0%, #0a1414 30%, #0d1a1a 60%, #060d0d 100%);
+}
+.theme-ottoman::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(8, 217, 214, 0.05) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.theme-madinah {
+  --accent-gold: #A8C0D6;
+  --accent-light: #D0E0F0;
+  background: linear-gradient(135deg, #080a0e 0%, #0c1018 30%, #101620 60%, #080a0e 100%);
+}
+.theme-madinah::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(168, 192, 214, 0.05) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.theme-nusantara {
+  --accent-gold: #8DC06A;
+  --accent-light: #B8DD9E;
+  background: linear-gradient(135deg, #060a05 0%, #0a1008 30%, #0e150c 60%, #060a05 100%);
+}
+.theme-nusantara::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(141, 192, 106, 0.05) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.theme-ramadhan {
+  --accent-gold: #F5D78A;
+  --accent-light: #FFF5DB;
+  background: linear-gradient(135deg, #0a0805 0%, #120e08 30%, #1a1410 60%, #0a0805 100%);
+}
+.theme-ramadhan::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(245, 215, 138, 0.06) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================
+   MASJID DISPLAY - Clock
+   ============================================ */
+.clock-digital {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 30px var(--accent-gold), 0 0 60px color-mix(in srgb, var(--accent-gold) 30%, transparent);
+}
+
+.clock-custom-font {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Analog Clock */
+.analog-clock {
+  position: relative;
+}
+
+.clock-hand {
+  transform-origin: bottom center;
+  transition: none;
+}
+
+.hour-hand {
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  width: 4px;
+  height: 28%;
+  margin-left: -2px;
+  background: var(--accent-gold);
+  border-radius: 2px;
+  transform-origin: bottom center;
+}
+
+.minute-hand {
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  width: 3px;
+  height: 36%;
+  margin-left: -1.5px;
+  background: #ffffff;
+  border-radius: 1.5px;
+  transform-origin: bottom center;
+}
+
+.second-hand {
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  width: 1.5px;
+  height: 40%;
+  margin-left: -0.75px;
+  background: #ef4444;
+  border-radius: 1px;
+  transform-origin: bottom center;
+}
+
+.clock-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  background: var(--accent-gold);
+  border-radius: 50%;
+  z-index: 10;
+}
+
+/* ============================================
+   MASJID DISPLAY - Prayer Rows
+   ============================================ */
+.prayer-row-active-now {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}
+
+.prayer-row-upcoming {
+  background: color-mix(in srgb, var(--accent-gold) 8%, transparent) !important;
+  border-color: color-mix(in srgb, var(--accent-gold) 25%, transparent) !important;
+}
+
+.prayer-row-passed {
+  opacity: 0.35;
+}
+
+/* ============================================
+   MASJID DISPLAY - Running Text Animations
+   ============================================ */
+.running-text-container {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.running-text-scroll-left {
+  animation: scrollLeft var(--running-speed) linear infinite;
+}
+
+.running-text-scroll-right {
+  animation: scrollRight var(--running-speed) linear infinite;
+}
+
+.running-text-alternate {
+  animation: scrollAlternate calc(var(--running-speed) * 2) ease-in-out infinite;
+}
+
+.running-text-fade {
+  animation: fadeInOut calc(var(--running-speed) * 2) ease-in-out infinite;
+}
+
+@keyframes scrollLeft {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+@keyframes scrollRight {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes scrollAlternate {
+  0%, 100% { transform: translateX(100%); }
+  50% { transform: translateX(-100%); }
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0; }
+  10%, 90% { opacity: 1; }
+}
+
+/* ============================================
+   MASJID DISPLAY - Adhan Mode
+   ============================================ */
+.adhan-mode-active {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #000000 0%, #0a0806 50%, #1a1508 100%);
+  animation: adhanFadeIn 1s ease-out;
+}
+
+@keyframes adhanFadeIn {
+  from { opacity: 0; transform: scale(1.05); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.adhan-text-latin {
+  font-size: 4rem;
+  font-weight: 700;
+  letter-spacing: 1.5em;
+  color: var(--accent-gold);
+  text-shadow: 0 0 40px var(--accent-gold), 0 0 80px color-mix(in srgb, var(--accent-gold) 40%, transparent);
+  text-indent: 1.5em;
+}
+
+.adhan-text-arabic {
+  font-size: 2.5rem;
+  color: #ffffff;
+  margin-top: 1.5rem;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.adhan-countdown {
+  font-size: 6rem;
+  font-weight: 700;
+  color: #ef4444;
+  margin-top: 2rem;
+  text-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+  animation: adhanPulse 1s ease-in-out infinite;
+}
+
+@keyframes adhanPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+/* ============================================
+   MASJID DISPLAY - Iqomah Mode
+   ============================================ */
+.iqomah-mode-active {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #000000 0%, #050505 50%, #0a0505 100%);
+  animation: adhanFadeIn 0.8s ease-out;
+}
+
+.iqomah-label {
+  font-size: 3.5rem;
+  font-weight: 700;
+  letter-spacing: 1.2em;
+  color: var(--accent-gold);
+  text-shadow: 0 0 30px var(--accent-gold);
+  text-indent: 1.2em;
+}
+
+.iqomah-prayer-name {
+  font-size: 2rem;
+  color: #ffffff;
+  margin-top: 1rem;
+  opacity: 0.8;
+}
+
+.iqomah-countdown-display {
+  font-size: 8rem;
+  font-weight: 900;
+  color: #ef4444;
+  margin-top: 1.5rem;
+  text-shadow: 0 0 40px rgba(239, 68, 68, 0.6), 0 0 80px rgba(239, 68, 68, 0.3);
+  animation: iqomahPulse 1s ease-in-out infinite;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes iqomahPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+/* ============================================
+   MASJID DISPLAY - Diamond Divider
+   ============================================ */
+.diamond-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.diamond-divider::before,
+.diamond-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+  opacity: 0.3;
+}
+
+.diamond-icon {
+  width: 8px;
+  height: 8px;
+  background: var(--accent-gold);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+/* ============================================
+   MASJID DISPLAY - Alert & Blink
+   ============================================ */
+.countdown-alert {
+  animation: alertPulse 0.8s ease-in-out infinite;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  background: rgba(239, 68, 68, 0.08) !important;
+}
+
+@keyframes alertPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  50% { box-shadow: 0 0 20px 4px rgba(239, 68, 68, 0.15); }
+}
+
+.blink-text {
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ============================================
+   MASJID DISPLAY - Scrollbar
+   ============================================ */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--accent-gold) 30%, transparent);
+  border-radius: 2px;
+}
+
+/* ============================================
+   MASJID DISPLAY - Status Badge
+   ============================================ */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+.status-dot-normal { background: #22c55e; }
+.status-dot-adhan { background: #f59e0b; }
+.status-dot-iqomah { background: #ef4444; }
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
