@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useMasjidStore } from '@/store/masjid-store'
 import { useDevice } from '@/components/masjid/hooks/useDevice'
 import type { PrayerTime, MasjidConfig } from '@/types/masjid'
@@ -11,7 +11,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -28,14 +27,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import {
   Card,
   CardContent,
@@ -70,6 +61,7 @@ import {
   ChevronRight,
   Sparkles,
   ArrowLeft,
+  Info,
 } from 'lucide-react'
 
 // ─── Constants ────────────────────────────────────────────────────────
@@ -151,14 +143,12 @@ const ANALOG_SIZE_OPTIONS = [
   { value: 850, label: '5XL' },
 ]
 
-const DEFAULT_PRAYER_TIMES: PrayerTime[] = [
-  { id: 'subuh', latin: 'Subuh', arabic: 'الفَجْر', time: '04:32', isMain: true },
-  { id: 'dzuhur', latin: 'Dzuhur', arabic: 'الظُّهْر', time: '11:58', isMain: true },
-  { id: 'ashar', latin: 'Ashar', arabic: 'العَصْر', time: '15:15', isMain: true },
-  { id: 'maghrib', latin: 'Maghrib', arabic: 'المَغْرِب', time: '17:58', isMain: true },
-  { id: 'isya', latin: 'Isya', arabic: 'العِشَاء', time: '19:08', isMain: true },
-  { id: 'dhuha', latin: 'Dhuha', arabic: 'الضُّحَى', time: '07:00', isMain: false },
-  { id: 'tahajjud', latin: 'Tahajud', arabic: 'تَهَجُّد', time: '03:30', isMain: false },
+const IQOMAH_QUICK = [
+  { label: "1'", value: 1 },
+  { label: "3'", value: 3 },
+  { label: "5'", value: 5 },
+  { label: "10'", value: 10 },
+  { label: "15'", value: 15 },
 ]
 
 // ─── Helper: Button Group ────────────────────────────────────────────
@@ -239,6 +229,66 @@ function SliderField({
         step={step}
         className="w-full"
       />
+    </div>
+  )
+}
+
+// ─── Helper: Toggle Switch with clear ON/OFF visual ──────────────────
+function ToggleSwitch({
+  label,
+  checked,
+  onChange,
+  description,
+}: {
+  label: string
+  checked: boolean
+  onChange: (v: boolean) => void
+  description?: string
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex-1 min-w-0">
+        <div className="text-xs text-zinc-300">{label}</div>
+        {description && (
+          <div className="text-[10px] text-zinc-500 mt-0.5">{description}</div>
+        )}
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={checked}
+          onClick={() => onChange(!checked)}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${
+            checked
+              ? 'bg-emerald-500'
+              : 'bg-zinc-700'
+          }`}
+        >
+          <span
+            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+              checked ? 'translate-x-5' : 'translate-x-0'
+            }`}
+          />
+        </button>
+        <span
+          className={`text-[10px] font-bold w-6 text-right select-none ${
+            checked ? 'text-emerald-400' : 'text-zinc-600'
+          }`}
+        >
+          {checked ? 'ON' : 'OFF'}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+// ─── Helper: Info Banner ─────────────────────────────────────────────
+function InfoBanner({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
+      <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+      <span className="text-[11px] leading-relaxed text-amber-400/80">{children}</span>
     </div>
   )
 }
@@ -366,18 +416,53 @@ function LoginScreen() {
 
 // ─── Settings Dashboard ──────────────────────────────────────────────
 function SettingsDashboard() {
-  const config = useMasjidStore((s) => s.config)
-  const setConfig = useMasjidStore((s) => s.setConfig)
+  // Store references (read-only for display, write-only on save)
+  const storeConfig = useMasjidStore((s) => s.config)
+  const setStoreConfig = useMasjidStore((s) => s.setConfig)
   const isLoading = useMasjidStore((s) => s.isLoading)
   const deviceId = useMasjidStore((s) => s.deviceId)
   const lastSynced = useMasjidStore((s) => s.lastSynced)
-  const { saveConfig, logout } = useDevice()
-  const [saving, setSaving] = useState(false)
+  const setStoreLastSynced = useMasjidStore((s) => s.setLastSynced)
+  const storeIsAuthenticated = useMasjidStore((s) => s.setIsAuthenticated)
+  const { logout: deviceLogout } = useDevice()
 
+  // ─── LOCAL STATE: form edits live here, never overwritten by store ─
+  const [formState, setFormState] = useState<MasjidConfig>(() => storeConfig)
+  const [saving, setSaving] = useState(false)
+  const formStateRef = useRef(formState)
+  formStateRef.current = formState
+
+  // Stable helper to update local form state (never triggers store re-render)
+  const updateForm = useCallback((partial: Partial<MasjidConfig>) => {
+    setFormState((prev) => ({ ...prev, ...partial }))
+  }, [])
+
+  // ─── Unsaved changes detection ─────────────────────────────────────
+  const hasUnsavedChanges = useMemo(() => {
+    return JSON.stringify(storeConfig) !== JSON.stringify(formState)
+  }, [storeConfig, formState])
+
+  // ─── Save: push local state → store → server ──────────────────────
   const handleSave = useCallback(async () => {
+    if (!deviceId) return
+    const currentForm = formStateRef.current
     setSaving(true)
     try {
-      await saveConfig()
+      // 1. Push to store so the main display updates live
+      setStoreConfig(currentForm)
+
+      // 2. Save to server directly (avoids stale closure issues)
+      const res = await fetch(`/api/screens/${deviceId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: currentForm }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Gagal menyimpan config')
+
+      // 3. Update sync timestamp
+      setStoreLastSynced(new Date().toLocaleTimeString('id-ID'))
+
       toast.success('Pengaturan berhasil disimpan!', {
         description: 'Tampilan akan diperbarui secara otomatis.',
       })
@@ -387,25 +472,28 @@ function SettingsDashboard() {
     } finally {
       setSaving(false)
     }
-  }, [saveConfig])
+  }, [deviceId, setStoreConfig, setStoreLastSynced])
 
+  // ─── Logout ────────────────────────────────────────────────────────
   const handleLogout = useCallback(() => {
-    logout()
+    deviceLogout()
     toast.info('Anda telah keluar')
-  }, [logout])
+  }, [deviceLogout])
 
-  // ─── Prayer times helpers ────────────────────────────────────────
+  // ─── Prayer times helpers (use local state) ──────────────────────
   const updatePrayerTime = useCallback(
     (index: number, field: keyof PrayerTime, value: string | boolean) => {
-      const updated = [...config.prayerTimesTemplate]
-      if (field === 'isMain') {
-        updated[index] = { ...updated[index], [field]: value as boolean }
-      } else {
-        updated[index] = { ...updated[index], [field]: value as string }
-      }
-      setConfig({ prayerTimesTemplate: updated })
+      setFormState((prev) => {
+        const updated = [...prev.prayerTimesTemplate]
+        if (field === 'isMain') {
+          updated[index] = { ...updated[index], [field]: value as boolean }
+        } else {
+          updated[index] = { ...updated[index], [field]: value as string }
+        }
+        return { ...prev, prayerTimesTemplate: updated }
+      })
     },
-    [config.prayerTimesTemplate, setConfig]
+    []
   )
 
   const addPrayerTime = useCallback(() => {
@@ -417,25 +505,21 @@ function SettingsDashboard() {
       time: '12:00',
       isMain: false,
     }
-    setConfig({ prayerTimesTemplate: [...config.prayerTimesTemplate, newPrayer] })
-  }, [config.prayerTimesTemplate, setConfig])
+    setFormState((prev) => ({
+      ...prev,
+      prayerTimesTemplate: [...prev.prayerTimesTemplate, newPrayer],
+    }))
+  }, [])
 
-  const removePrayerTime = useCallback(
-    (index: number) => {
-      const updated = config.prayerTimesTemplate.filter((_, i) => i !== index)
-      setConfig({ prayerTimesTemplate: updated })
-    },
-    [config.prayerTimesTemplate, setConfig]
-  )
+  const removePrayerTime = useCallback((index: number) => {
+    setFormState((prev) => ({
+      ...prev,
+      prayerTimesTemplate: prev.prayerTimesTemplate.filter((_, i) => i !== index),
+    }))
+  }, [])
 
-  // ─── Iqomah quick buttons ────────────────────────────────────────
-  const IQOMAH_QUICK = [
-    { label: "1'", value: 1 },
-    { label: "3'", value: 3 },
-    { label: "5'", value: 5 },
-    { label: "10'", value: 10 },
-    { label: "15'", value: 15 },
-  ]
+  // ─── Shorthand alias for readability ──────────────────────────────
+  const c = formState
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-950">
@@ -447,6 +531,11 @@ function SettingsDashboard() {
             <h1 className="text-sm font-semibold text-zinc-200">
               MasjidScreen Settings
             </h1>
+            {hasUnsavedChanges && (
+              <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+                Belum disimpan
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {deviceId && (
@@ -505,8 +594,8 @@ function SettingsDashboard() {
                 <div className="space-y-1.5">
                   <Label className="text-xs text-zinc-400">Nama Masjid (Indonesia)</Label>
                   <Input
-                    value={config.mosqueName}
-                    onChange={(e) => setConfig({ mosqueName: e.target.value })}
+                    value={c.mosqueName}
+                    onChange={(e) => updateForm({ mosqueName: e.target.value })}
                     className="bg-zinc-800 border-zinc-700 text-sm text-zinc-200"
                     placeholder="Nama masjid"
                   />
@@ -516,8 +605,8 @@ function SettingsDashboard() {
                 <div className="space-y-1.5">
                   <Label className="text-xs text-zinc-400">Nama Masjid (Arab)</Label>
                   <Input
-                    value={config.mosqueNameArabic}
-                    onChange={(e) => setConfig({ mosqueNameArabic: e.target.value })}
+                    value={c.mosqueNameArabic}
+                    onChange={(e) => updateForm({ mosqueNameArabic: e.target.value })}
                     className="bg-zinc-800 border-zinc-700 text-sm text-zinc-200"
                     dir="rtl"
                     style={{ fontFamily: "'Amiri', serif" }}
@@ -529,8 +618,8 @@ function SettingsDashboard() {
                 <div className="space-y-1.5">
                   <Label className="text-xs text-zinc-400">Font Nama Masjid</Label>
                   <Select
-                    value={config.mosqueNameFontFamily}
-                    onValueChange={(v) => setConfig({ mosqueNameFontFamily: v })}
+                    value={c.mosqueNameFontFamily}
+                    onValueChange={(v) => updateForm({ mosqueNameFontFamily: v })}
                   >
                     <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 text-sm text-zinc-200">
                       <SelectValue />
@@ -548,8 +637,8 @@ function SettingsDashboard() {
                 {/* Mosque Name Size */}
                 <SliderField
                   label="Ukuran Nama Masjid"
-                  value={config.mosqueNameFontSize}
-                  onChange={(v) => setConfig({ mosqueNameFontSize: v })}
+                  value={c.mosqueNameFontSize}
+                  onChange={(v) => updateForm({ mosqueNameFontSize: v })}
                   min={0.5}
                   max={3}
                   step={0.1}
@@ -562,8 +651,8 @@ function SettingsDashboard() {
                 <div className="space-y-1.5">
                   <Label className="text-xs text-zinc-400">Font Tanggal / Hari</Label>
                   <Select
-                    value={config.dateFontFamily}
-                    onValueChange={(v) => setConfig({ dateFontFamily: v })}
+                    value={c.dateFontFamily}
+                    onValueChange={(v) => updateForm({ dateFontFamily: v })}
                   >
                     <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 text-sm text-zinc-200">
                       <SelectValue />
@@ -581,8 +670,8 @@ function SettingsDashboard() {
                 {/* Date Size */}
                 <SliderField
                   label="Ukuran Tanggal"
-                  value={config.dateFontSize}
-                  onChange={(v) => setConfig({ dateFontSize: v })}
+                  value={c.dateFontSize}
+                  onChange={(v) => updateForm({ dateFontSize: v })}
                   min={0.5}
                   max={2.5}
                   step={0.1}
@@ -592,8 +681,8 @@ function SettingsDashboard() {
                 {/* Date Opacity */}
                 <SliderField
                   label="Transparansi Tanggal"
-                  value={config.dateOpacity ?? 0.85}
-                  onChange={(v) => setConfig({ dateOpacity: v })}
+                  value={c.dateOpacity ?? 0.85}
+                  onChange={(v) => updateForm({ dateOpacity: v })}
                   min={0.3}
                   max={1}
                   step={0.05}
@@ -604,22 +693,22 @@ function SettingsDashboard() {
                 <div className="space-y-1.5">
                   <Label className="text-xs text-zinc-400">Warna Tanggal</Label>
                   <div className="flex flex-wrap gap-2">
-                    {DATE_COLORS.map((c) => (
+                    {DATE_COLORS.map((dc) => (
                       <button
-                        key={c.value}
+                        key={dc.value}
                         type="button"
-                        onClick={() => setConfig({ dateColor: c.value })}
+                        onClick={() => updateForm({ dateColor: dc.value })}
                         className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition-all ${
-                          config.dateColor === c.value
+                          c.dateColor === dc.value
                             ? 'border-amber-500 bg-amber-500/10 text-amber-400'
                             : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
                         }`}
                       >
                         <div
                           className="h-3 w-3 rounded-full border border-zinc-600"
-                          style={{ backgroundColor: c.value }}
+                          style={{ backgroundColor: dc.value }}
                         />
-                        {c.label}
+                        {dc.label}
                       </button>
                     ))}
                   </div>
@@ -644,12 +733,12 @@ function SettingsDashboard() {
                       { value: 'digital', label: 'Digital' },
                       { value: 'analog', label: 'Analog' },
                     ]}
-                    value={config.clockType}
-                    onChange={(v) => setConfig({ clockType: v as 'digital' | 'analog' })}
+                    value={c.clockType}
+                    onChange={(v) => updateForm({ clockType: v as 'digital' | 'analog' })}
                   />
                 </div>
 
-                {config.clockType === 'digital' ? (
+                {c.clockType === 'digital' ? (
                   <>
                     {/* Digital Clock Style */}
                     <div className="space-y-1.5">
@@ -660,8 +749,8 @@ function SettingsDashboard() {
                           { value: 'retro', label: 'Retro' },
                           { value: 'minimal', label: 'Minimal' },
                         ]}
-                        value={config.clockStyle || 'default'}
-                        onChange={(v) => setConfig({ clockStyle: v as 'default' | 'retro' | 'minimal' })}
+                        value={c.clockStyle || 'default'}
+                        onChange={(v) => updateForm({ clockStyle: v as 'default' | 'retro' | 'minimal' })}
                       />
                     </div>
 
@@ -669,8 +758,8 @@ function SettingsDashboard() {
                     <div className="space-y-1.5">
                       <Label className="text-xs text-zinc-400">Font Jam Digital</Label>
                       <Select
-                        value={config.digitalFontFamily}
-                        onValueChange={(v) => setConfig({ digitalFontFamily: v })}
+                        value={c.digitalFontFamily}
+                        onValueChange={(v) => updateForm({ digitalFontFamily: v })}
                       >
                         <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 text-sm text-zinc-200">
                           <SelectValue />
@@ -688,8 +777,8 @@ function SettingsDashboard() {
                     {/* Digital Clock Size */}
                     <SliderField
                       label="Ukuran Jam Digital"
-                      value={config.digitalFontSize}
-                      onChange={(v) => setConfig({ digitalFontSize: v })}
+                      value={c.digitalFontSize}
+                      onChange={(v) => updateForm({ digitalFontSize: v })}
                       min={2}
                       max={15}
                       step={0.5}
@@ -707,9 +796,9 @@ function SettingsDashboard() {
                           { value: 'roman', label: 'Romawi' },
                           { value: 'hindi', label: 'Hijriyah' },
                         ]}
-                        value={config.analogNumberStyle}
+                        value={c.analogNumberStyle}
                         onChange={(v) =>
-                          setConfig({
+                          updateForm({
                             analogNumberStyle: v as 'arabic' | 'roman' | 'hindi',
                           })
                         }
@@ -724,9 +813,9 @@ function SettingsDashboard() {
                           <button
                             key={s.value}
                             type="button"
-                            onClick={() => setConfig({ analogSize: s.value })}
+                            onClick={() => updateForm({ analogSize: s.value })}
                             className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
-                              config.analogSize === s.value
+                              c.analogSize === s.value
                                 ? 'border-amber-500 bg-amber-500/20 text-amber-400'
                                 : 'border-zinc-700 bg-zinc-800/50 text-zinc-400 hover:border-zinc-600'
                             }`}
@@ -740,13 +829,11 @@ function SettingsDashboard() {
                 )}
 
                 {/* Show Seconds */}
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs text-zinc-400">Tampilkan Detik</Label>
-                  <Switch
-                    checked={config.showSeconds}
-                    onCheckedChange={(v) => setConfig({ showSeconds: v })}
-                  />
-                </div>
+                <ToggleSwitch
+                  label="Tampilkan Detik"
+                  checked={c.showSeconds}
+                  onChange={(v) => updateForm({ showSeconds: v })}
+                />
               </AccordionContent>
             </AccordionItem>
 
@@ -767,19 +854,19 @@ function SettingsDashboard() {
                       { value: 'auto', label: 'Otomatis' },
                       { value: 'manual', label: 'Manual' },
                     ]}
-                    value={config.prayerSourceMode}
+                    value={c.prayerSourceMode}
                     onChange={(v) =>
-                      setConfig({ prayerSourceMode: v as 'auto' | 'manual' })
+                      updateForm({ prayerSourceMode: v as 'auto' | 'manual' })
                     }
                   />
                 </div>
 
                 {/* Manual Prayer Times */}
-                {config.prayerSourceMode === 'manual' && (
+                {c.prayerSourceMode === 'manual' && (
                   <div className="space-y-2">
                     <SectionLabel>Jadwal Sholat Manual</SectionLabel>
                     <div className="max-h-72 space-y-2 overflow-y-auto">
-                      {config.prayerTimesTemplate.map((prayer, idx) => (
+                      {c.prayerTimesTemplate.map((prayer, idx) => (
                         <div
                           key={prayer.id}
                           className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-800/50 p-2"
@@ -836,27 +923,27 @@ function SettingsDashboard() {
                 <div className="space-y-1.5">
                   <Label className="text-xs text-zinc-400">Warna Kartu Sholat</Label>
                   <div className="grid grid-cols-4 gap-2">
-                    {CARD_COLORS.map((c) => (
+                    {CARD_COLORS.map((cc) => (
                       <button
-                        key={c.label}
+                        key={cc.label}
                         type="button"
                         onClick={() =>
-                          setConfig({
-                            cardBgColor: c.bg,
-                            cardBorderColor: c.border,
+                          updateForm({
+                            cardBgColor: cc.bg,
+                            cardBorderColor: cc.border,
                           })
                         }
                         className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-[10px] transition-all ${
-                          config.cardBgColor === c.bg
+                          c.cardBgColor === cc.bg
                             ? 'border-amber-500 bg-amber-500/10 text-amber-400'
                             : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
                         }`}
                       >
                         <div
                           className="h-5 w-5 rounded-full border border-zinc-600"
-                          style={{ backgroundColor: c.dot }}
+                          style={{ backgroundColor: cc.dot }}
                         />
-                        {c.label}
+                        {cc.label}
                       </button>
                     ))}
                   </div>
@@ -874,17 +961,21 @@ function SettingsDashboard() {
                 </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pb-4">
+                {/* Info banner: 5 main prayers only */}
+                <InfoBanner>
+                  Mode Adhan &amp; Iqomah hanya berlaku untuk sholat 5 waktu (Subuh, Dzuhur, Ashar, Maghrib, Isya). Sholat sunnah seperti Dhuha &amp; Tahajud tidak memicu Adhan/Iqomah.
+                </InfoBanner>
+
                 {/* Adhan Enable */}
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs text-zinc-400">Aktifkan Mode Adhan</Label>
-                  <Switch
-                    checked={config.adhanModeEnabled}
-                    onCheckedChange={(v) => setConfig({ adhanModeEnabled: v })}
-                  />
-                </div>
+                <ToggleSwitch
+                  label="Aktifkan Mode Adhan"
+                  checked={c.adhanModeEnabled}
+                  onChange={(v) => updateForm({ adhanModeEnabled: v })}
+                  description="Tampilan layar penuh saat waktu adhan tiba"
+                />
 
                 {/* Adhan Duration */}
-                {config.adhanModeEnabled && (
+                {c.adhanModeEnabled && (
                   <div className="space-y-1.5">
                     <Label className="text-xs text-zinc-400">Durasi Adhan</Label>
                     <ButtonGroup
@@ -893,8 +984,8 @@ function SettingsDashboard() {
                         { value: '180', label: '3 menit' },
                         { value: '300', label: '5 menit' },
                       ]}
-                      value={String(config.adhanDuration)}
-                      onChange={(v) => setConfig({ adhanDuration: Number(v) })}
+                      value={String(c.adhanDuration)}
+                      onChange={(v) => updateForm({ adhanDuration: Number(v) })}
                     />
                   </div>
                 )}
@@ -902,22 +993,21 @@ function SettingsDashboard() {
                 <Separator className="bg-zinc-800" />
 
                 {/* Iqomah Enable */}
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs text-zinc-400">Aktifkan Mode Iqomah</Label>
-                  <Switch
-                    checked={config.iqomahModeEnabled}
-                    onCheckedChange={(v) => setConfig({ iqomahModeEnabled: v })}
-                  />
-                </div>
+                <ToggleSwitch
+                  label="Aktifkan Mode Iqomah"
+                  checked={c.iqomahModeEnabled}
+                  onChange={(v) => updateForm({ iqomahModeEnabled: v })}
+                  description="Hitung mundur iqomah setelah adhan selesai"
+                />
 
-                {config.iqomahModeEnabled && (
+                {c.iqomahModeEnabled && (
                   <>
                     {/* Iqomah Font */}
                     <div className="space-y-1.5">
                       <Label className="text-xs text-zinc-400">Font Iqomah</Label>
                       <Select
-                        value={config.iqomahFontFamily}
-                        onValueChange={(v) => setConfig({ iqomahFontFamily: v })}
+                        value={c.iqomahFontFamily}
+                        onValueChange={(v) => updateForm({ iqomahFontFamily: v })}
                       >
                         <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 text-sm text-zinc-200">
                           <SelectValue />
@@ -935,8 +1025,8 @@ function SettingsDashboard() {
                     {/* Iqomah Font Size */}
                     <SliderField
                       label="Ukuran Font Iqomah"
-                      value={config.iqomahFontSize}
-                      onChange={(v) => setConfig({ iqomahFontSize: v })}
+                      value={c.iqomahFontSize}
+                      onChange={(v) => updateForm({ iqomahFontSize: v })}
                       min={4}
                       max={20}
                       step={0.5}
@@ -944,20 +1034,19 @@ function SettingsDashboard() {
                     />
 
                     {/* Iqomah Beep */}
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs text-zinc-400">Suara Beep Iqomah</Label>
-                      <Switch
-                        checked={config.iqomahBeepEnabled}
-                        onCheckedChange={(v) => setConfig({ iqomahBeepEnabled: v })}
-                      />
-                    </div>
+                    <ToggleSwitch
+                      label="Suara Beep Iqomah"
+                      checked={c.iqomahBeepEnabled}
+                      onChange={(v) => updateForm({ iqomahBeepEnabled: v })}
+                      description="Bunyi beep pendek saat iqomah dimulai"
+                    />
 
                     {/* Iqomah Minutes */}
                     <div className="space-y-2">
                       <SliderField
                         label="Menit Iqomah (setelah Adhan)"
-                        value={config.iqomahMinutes}
-                        onChange={(v) => setConfig({ iqomahMinutes: v })}
+                        value={c.iqomahMinutes}
+                        onChange={(v) => updateForm({ iqomahMinutes: v })}
                         min={1}
                         max={20}
                         step={1}
@@ -968,9 +1057,9 @@ function SettingsDashboard() {
                           <button
                             key={q.value}
                             type="button"
-                            onClick={() => setConfig({ iqomahMinutes: q.value })}
+                            onClick={() => updateForm({ iqomahMinutes: q.value })}
                             className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all ${
-                              config.iqomahMinutes === q.value
+                              c.iqomahMinutes === q.value
                                 ? 'border-amber-500 bg-amber-500/20 text-amber-400'
                                 : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
                             }`}
@@ -1019,13 +1108,12 @@ function SettingsDashboard() {
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pb-4">
                 {/* Show Running Text */}
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs text-zinc-400">Tampilkan Teks Berjalan</Label>
-                  <Switch
-                    checked={config.showAnnouncement}
-                    onCheckedChange={(v) => setConfig({ showAnnouncement: v })}
-                  />
-                </div>
+                <ToggleSwitch
+                  label="Tampilkan Teks Berjalan"
+                  checked={c.showAnnouncement}
+                  onChange={(v) => updateForm({ showAnnouncement: v })}
+                  description="Teks pengumuman muncul di bagian bawah layar"
+                />
 
                 {/* Animation Style */}
                 <div className="space-y-1.5">
@@ -1041,12 +1129,12 @@ function SettingsDashboard() {
                         key={a.value}
                         type="button"
                         onClick={() =>
-                          setConfig({
+                          updateForm({
                             runningAnimation: a.value as MasjidConfig['runningAnimation'],
                           })
                         }
                         className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-all ${
-                          config.runningAnimation === a.value
+                          c.runningAnimation === a.value
                             ? 'border-amber-500 bg-amber-500/10 text-amber-400'
                             : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
                         }`}
@@ -1061,8 +1149,8 @@ function SettingsDashboard() {
                 {/* Speed */}
                 <SliderField
                   label="Kecepatan Animasi"
-                  value={config.runningSpeed}
-                  onChange={(v) => setConfig({ runningSpeed: v })}
+                  value={c.runningSpeed}
+                  onChange={(v) => updateForm({ runningSpeed: v })}
                   min={5}
                   max={60}
                   step={1}
@@ -1073,8 +1161,8 @@ function SettingsDashboard() {
                 <div className="space-y-1.5">
                   <Label className="text-xs text-zinc-400">Font Teks Berjalan</Label>
                   <Select
-                    value={config.runningFontFamily}
-                    onValueChange={(v) => setConfig({ runningFontFamily: v })}
+                    value={c.runningFontFamily}
+                    onValueChange={(v) => updateForm({ runningFontFamily: v })}
                   >
                     <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 text-sm text-zinc-200">
                       <SelectValue />
@@ -1092,8 +1180,8 @@ function SettingsDashboard() {
                 {/* Running Text Font Size */}
                 <SliderField
                   label="Ukuran Font Teks Berjalan"
-                  value={config.runningFontSize}
-                  onChange={(v) => setConfig({ runningFontSize: v })}
+                  value={c.runningFontSize}
+                  onChange={(v) => updateForm({ runningFontSize: v })}
                   min={0.5}
                   max={3}
                   step={0.1}
@@ -1104,8 +1192,8 @@ function SettingsDashboard() {
                 <div className="space-y-1.5">
                   <Label className="text-xs text-zinc-400">Teks Pengumuman</Label>
                   <Textarea
-                    value={config.announcement}
-                    onChange={(e) => setConfig({ announcement: e.target.value })}
+                    value={c.announcement}
+                    onChange={(e) => updateForm({ announcement: e.target.value })}
                     className="min-h-20 resize-none bg-zinc-800 border-zinc-700 text-sm text-zinc-200"
                     placeholder="Masukkan teks pengumuman..."
                   />
@@ -1130,9 +1218,9 @@ function SettingsDashboard() {
                       <button
                         key={t.value}
                         type="button"
-                        onClick={() => setConfig({ theme: t.value })}
+                        onClick={() => updateForm({ theme: t.value })}
                         className={`flex items-center gap-3 rounded-lg border p-3 text-left transition-all ${
-                          config.theme === t.value
+                          c.theme === t.value
                             ? 'border-amber-500 bg-amber-500/5 ring-1 ring-amber-500/30'
                             : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600'
                         }`}
@@ -1149,12 +1237,12 @@ function SettingsDashboard() {
                         </div>
                         <span
                           className={`text-sm font-medium ${
-                            config.theme === t.value ? 'text-amber-400' : 'text-zinc-300'
+                            c.theme === t.value ? 'text-amber-400' : 'text-zinc-300'
                           }`}
                         >
                           {t.label}
                         </span>
-                        {config.theme === t.value && (
+                        {c.theme === t.value && (
                           <ChevronRight className="ml-auto h-4 w-4 text-amber-400" />
                         )}
                       </button>
@@ -1169,39 +1257,39 @@ function SettingsDashboard() {
                       <div className="flex gap-1">
                         <div
                           className="h-4 w-4 rounded border border-zinc-600"
-                          style={{ backgroundColor: config.customThemeAccent }}
+                          style={{ backgroundColor: c.customThemeAccent }}
                         />
                         <div
                           className="h-4 w-4 rounded border border-zinc-600"
-                          style={{ backgroundColor: config.customThemeAccentLight, opacity: 0.5 }}
+                          style={{ backgroundColor: c.customThemeAccentLight, opacity: 0.5 }}
                         />
                       </div>
                       <span className="text-xs font-medium text-zinc-300">Tema Custom</span>
                     </div>
                     <Button
                       size="sm"
-                      variant={config.theme === 'custom' ? 'default' : 'outline'}
-                      onClick={() => setConfig({ theme: 'custom' })}
-                      className={config.theme === 'custom' ? 'bg-amber-500 text-black hover:bg-amber-600 h-7 text-xs' : 'h-7 text-xs border-zinc-700 text-zinc-400'}
+                      variant={c.theme === 'custom' ? 'default' : 'outline'}
+                      onClick={() => updateForm({ theme: 'custom' })}
+                      className={c.theme === 'custom' ? 'bg-amber-500 text-black hover:bg-amber-600 h-7 text-xs' : 'h-7 text-xs border-zinc-700 text-zinc-400'}
                     >
-                      {config.theme === 'custom' ? 'Aktif' : 'Gunakan'}
+                      {c.theme === 'custom' ? 'Aktif' : 'Gunakan'}
                     </Button>
                   </div>
 
-                  {config.theme === 'custom' && (
+                  {c.theme === 'custom' && (
                     <div className="space-y-3">
                       <div className="space-y-1.5">
                         <Label className="text-xs text-zinc-400">Warna Aksen Utama</Label>
                         <div className="flex items-center gap-3">
                           <input
                             type="color"
-                            value={config.customThemeAccent}
-                            onChange={(e) => setConfig({ customThemeAccent: e.target.value })}
+                            value={c.customThemeAccent}
+                            onChange={(e) => updateForm({ customThemeAccent: e.target.value })}
                             className="h-8 w-12 cursor-pointer rounded border border-zinc-700 bg-transparent"
                           />
                           <Input
-                            value={config.customThemeAccent}
-                            onChange={(e) => setConfig({ customThemeAccent: e.target.value })}
+                            value={c.customThemeAccent}
+                            onChange={(e) => updateForm({ customThemeAccent: e.target.value })}
                             className="flex-1 bg-zinc-800 border-zinc-700 text-xs text-zinc-200 font-mono"
                             maxLength={7}
                           />
@@ -1212,13 +1300,13 @@ function SettingsDashboard() {
                         <div className="flex items-center gap-3">
                           <input
                             type="color"
-                            value={config.customThemeAccentLight}
-                            onChange={(e) => setConfig({ customThemeAccentLight: e.target.value })}
+                            value={c.customThemeAccentLight}
+                            onChange={(e) => updateForm({ customThemeAccentLight: e.target.value })}
                             className="h-8 w-12 cursor-pointer rounded border border-zinc-700 bg-transparent"
                           />
                           <Input
-                            value={config.customThemeAccentLight}
-                            onChange={(e) => setConfig({ customThemeAccentLight: e.target.value })}
+                            value={c.customThemeAccentLight}
+                            onChange={(e) => updateForm({ customThemeAccentLight: e.target.value })}
                             className="flex-1 bg-zinc-800 border-zinc-700 text-xs text-zinc-200 font-mono"
                             maxLength={7}
                           />
@@ -1233,27 +1321,24 @@ function SettingsDashboard() {
                 {/* Display Toggles */}
                 <div className="space-y-3">
                   <SectionLabel>Opsi Tampilan</SectionLabel>
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs text-zinc-400">Tanggal Hijriyah</Label>
-                    <Switch
-                      checked={config.showHijri}
-                      onCheckedChange={(v) => setConfig({ showHijri: v })}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs text-zinc-400">Hitung Mundur Sholat</Label>
-                    <Switch
-                      checked={config.showCountdown}
-                      onCheckedChange={(v) => setConfig({ showCountdown: v })}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs text-zinc-400">Suara Alarm</Label>
-                    <Switch
-                      checked={config.soundEnabled}
-                      onCheckedChange={(v) => setConfig({ soundEnabled: v })}
-                    />
-                  </div>
+                  <ToggleSwitch
+                    label="Tanggal Hijriyah"
+                    checked={c.showHijri}
+                    onChange={(v) => updateForm({ showHijri: v })}
+                    description="Tampilkan tanggal Hijriyah di bawah tanggal Masehi"
+                  />
+                  <ToggleSwitch
+                    label="Hitung Mundur Sholat"
+                    checked={c.showCountdown}
+                    onChange={(v) => updateForm({ showCountdown: v })}
+                    description="Tampilkan sisa waktu menuju sholat berikutnya"
+                  />
+                  <ToggleSwitch
+                    label="Suara Alarm"
+                    checked={c.soundEnabled}
+                    onChange={(v) => updateForm({ soundEnabled: v })}
+                    description="Aktifkan suara notifikasi saat waktu sholat"
+                  />
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -1277,10 +1362,15 @@ function SettingsDashboard() {
             ) : (
               <>
                 <Save className="h-4 w-4" />
-                Simpan Pengaturan
+                {hasUnsavedChanges ? 'Simpan Pengaturan' : 'Pengaturan Tersimpan'}
               </>
             )}
           </Button>
+          {hasUnsavedChanges && (
+            <p className="mt-1.5 text-center text-[10px] text-zinc-500">
+              Anda memiliki perubahan yang belum disimpan
+            </p>
+          )}
         </div>
       </div>
     </div>

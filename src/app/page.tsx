@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, Suspense } from 'react'
+import { useEffect } from 'react'
 import { useMasjidStore } from '@/store/masjid-store'
 import { useDevice } from '@/components/masjid/hooks/useDevice'
 import { useRealtimeSync } from '@/components/masjid/hooks/useRealtimeSync'
 import { useSearchParams } from 'next/navigation'
 import MosqueDisplay from '@/components/masjid/MosqueDisplay'
 
-function HomeContent() {
+export default function Home() {
   const deviceId = useMasjidStore((s) => s.deviceId)
   const setPreviewMode = useMasjidStore((s) => s.setPreviewMode)
   const fetchConfig = useDevice().fetchConfig
@@ -36,13 +36,5 @@ function HomeContent() {
 
   return (
     <MosqueDisplay />
-  )
-}
-
-export default function Home() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <HomeContent />
-    </Suspense>
   )
 }
