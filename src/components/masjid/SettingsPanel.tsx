@@ -4,6 +4,14 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useMasjidStore } from '@/store/masjid-store'
 import { useDevice } from '@/components/masjid/hooks/useDevice'
 import type { PrayerTime, MasjidConfig } from '@/types/masjid'
+import type { InformationItem } from '@/types/masjid'
+import dynamic from 'next/dynamic'
+
+// Dynamic import MosqueDisplay to avoid SSR issues
+const MosqueDisplay = dynamic(
+  () => import('@/components/masjid/MosqueDisplay').then((m) => m.default),
+  { ssr: false }
+)
 
 // shadcn/ui
 import { Button } from '@/components/ui/button'
@@ -44,6 +52,7 @@ import { toast } from 'sonner'
 // Icons
 import Link from 'next/link'
 import {
+  X,
   Settings,
   LogOut,
   Save,
@@ -62,6 +71,11 @@ import {
   Sparkles,
   ArrowLeft,
   Info,
+  ImageUp,
+  Trash2,
+  FileImage,
+  BookOpen,
+  MapPin,
 } from 'lucide-react'
 
 // ─── Constants ────────────────────────────────────────────────────────
@@ -124,11 +138,22 @@ const CARD_COLORS = [
 ]
 
 const THEME_OPTIONS = [
-  { value: 'haramain' as const, label: 'Haramain', accent: '#C9A84C', accentLight: '#E8D48B' },
-  { value: 'ottoman' as const, label: 'Ottoman', accent: '#08D9D6', accentLight: '#4EEAEA' },
-  { value: 'madinah' as const, label: 'Madinah Night', accent: '#A8C0D6', accentLight: '#D0E0F0' },
-  { value: 'nusantara' as const, label: 'Nusantara', accent: '#8DC06A', accentLight: '#B8DD9E' },
-  { value: 'ramadhan' as const, label: 'Ramadhan Special', accent: '#F5D78A', accentLight: '#FFF5DB' },
+  // Dark themes
+  { value: 'haramain' as const, label: 'Haramain', accent: '#C9A84C', accentLight: '#E8D48B', isLight: false },
+  { value: 'ottoman' as const, label: 'Ottoman', accent: '#08D9D6', accentLight: '#4EEAEA', isLight: false },
+  { value: 'madinah' as const, label: 'Madinah Night', accent: '#A8C0D6', accentLight: '#D0E0F0', isLight: false },
+  { value: 'nusantara' as const, label: 'Nusantara', accent: '#8DC06A', accentLight: '#B8DD9E', isLight: false },
+  { value: 'ramadhan' as const, label: 'Ramadhan Special', accent: '#F5D78A', accentLight: '#FFF5DB', isLight: false },
+  // Light / Bright elegant themes
+  { value: 'istanbul-pearl' as const, label: 'Istanbul Pearl', accent: '#8B6914', accentLight: '#C9A84C', isLight: true, bg: '#FFFDF7' },
+  { value: 'safavid-marble' as const, label: 'Safavid Marble', accent: '#0D7377', accentLight: '#14B8A6', isLight: true, bg: '#FAFCFE' },
+  { value: 'andalusian-garden' as const, label: 'Andalusian Garden', accent: '#065F46', accentLight: '#059669', isLight: true, bg: '#FEFDFB' },
+  { value: 'ottoman-rose' as const, label: 'Ottoman Rose', accent: '#9F1239', accentLight: '#E11D48', isLight: true, bg: '#FFF8FA' },
+  { value: 'al-aqsa-gold' as const, label: 'Al-Aqsa Gold', accent: '#92400E', accentLight: '#B45309', isLight: true, bg: '#FFFBF3' },
+  // Layout Variant Themes (different component positions)
+  { value: 'nabawi' as const, label: 'Nabawi', accent: '#C9A84C', accentLight: '#E8D48B', isLight: false, bg: '#0d3a28', layout: 'nabawi', description: 'Sidebar kanan untuk jadwal shalat' },
+  { value: 'makkah' as const, label: 'Makkah', accent: '#E8C547', accentLight: '#FFF2A8', isLight: false, bg: '#0d0a05', layout: 'makkah', description: 'Jadwal shalat di bar atas' },
+  { value: 'cordoba' as const, label: 'Cordoba', accent: '#8B4513', accentLight: '#CD853F', isLight: true, bg: '#F5ECD7', layout: 'cordoba', description: 'Tampilan terpisah kiri-kanan' },
 ]
 
 const ANALOG_SIZE_OPTIONS = [
@@ -177,6 +202,142 @@ function ButtonGroup({
           {opt.label}
         </button>
       ))}
+    </div>
+  )
+}
+
+// ─── Helper: Add Hadith / Ayat Form ───────────────────────────────────
+function AddHadithForm({ onAdd }: { onAdd: (item: { id: string; type: 'hadith' | 'ayat'; arabic: string; meaning: string; source: string; active: boolean }) => void }) {
+  const [type, setType] = useState<'hadith' | 'ayat'>('hadith')
+  const [arabic, setArabic] = useState('')
+  const [meaning, setMeaning] = useState('')
+  const [source, setSource] = useState('')
+  const [isAdding, setIsAdding] = useState(false)
+
+  const handleSubmit = () => {
+    if (!arabic.trim() || !meaning.trim() || !source.trim()) {
+      toast.error('Lengkapi semua field (Arab, Arti, Sumber)')
+      return
+    }
+    onAdd({
+      id: `h_${Date.now()}`,
+      type,
+      arabic: arabic.trim(),
+      meaning: meaning.trim(),
+      source: source.trim(),
+      active: true,
+    })
+    setArabic('')
+    setMeaning('')
+    setSource('')
+    setIsAdding(false)
+    toast.success(`${type === 'ayat' ? 'Ayat' : 'Hadits'} berhasil ditambahkan`)
+  }
+
+  if (!isAdding) {
+    return (
+      <button
+        onClick={() => setIsAdding(true)}
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-700 py-2.5 text-xs font-medium text-zinc-400 transition-colors hover:border-amber-500/40 hover:bg-amber-500/5 hover:text-amber-400"
+      >
+        <Plus className="h-3.5 w-3.5" />
+        Tambah Hadits / Ayat
+      </button>
+    )
+  }
+
+  return (
+    <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-zinc-300">Tambah {type === 'ayat' ? 'Ayat Al-Quran' : 'Hadits'}</span>
+        <button
+          onClick={() => setIsAdding(false)}
+          className="flex h-6 w-6 items-center justify-center rounded text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 transition-colors"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {/* Type selector */}
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] text-zinc-500">Tipe:</span>
+        <div className="flex rounded-lg border border-zinc-700 overflow-hidden">
+          <button
+            onClick={() => setType('hadith')}
+            className={`px-3 py-1 text-[10px] font-semibold transition-colors ${
+              type === 'hadith'
+                ? 'bg-amber-500/20 text-amber-400'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            Hadits
+          </button>
+          <button
+            onClick={() => setType('ayat')}
+            className={`px-3 py-1 text-[10px] font-semibold transition-colors ${
+              type === 'ayat'
+                ? 'bg-emerald-500/20 text-emerald-400'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            Ayat
+          </button>
+        </div>
+      </div>
+
+      {/* Arabic text */}
+      <div>
+        <label className="text-[10px] text-zinc-500 mb-1 block">Teks Arab</label>
+        <textarea
+          value={arabic}
+          onChange={(e) => setArabic(e.target.value)}
+          dir="rtl"
+          placeholder="اَلْحَمْدُ لِلّٰهِ رَبِّ الْعَالَمِيْنَ"
+          className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/25 font-amiri text-right leading-relaxed resize-none"
+          rows={2}
+        />
+      </div>
+
+      {/* Meaning */}
+      <div>
+        <label className="text-[10px] text-zinc-500 mb-1 block">Arti / Terjemahan</label>
+        <textarea
+          value={meaning}
+          onChange={(e) => setMeaning(e.target.value)}
+          placeholder="Segala puji bagi Allah, Tuhan seluruh alam."
+          className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/25 resize-none"
+          rows={2}
+        />
+      </div>
+
+      {/* Source */}
+      <div>
+        <label className="text-[10px] text-zinc-500 mb-1 block">Sumber</label>
+        <input
+          type="text"
+          value={source}
+          onChange={(e) => setSource(e.target.value)}
+          placeholder="HR. Bukhari / QS. Al-Fatihah: 1"
+          className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/25"
+        />
+      </div>
+
+      {/* Submit */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setIsAdding(false)}
+          className="flex-1 rounded-lg border border-zinc-700 py-2 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-800"
+        >
+          Batal
+        </button>
+        <button
+          onClick={handleSubmit}
+          className="flex-1 rounded-lg bg-amber-500/20 py-2 text-xs font-semibold text-amber-400 transition-colors hover:bg-amber-500/30"
+        >
+          <Plus className="mr-1 inline h-3 w-3" />
+          Tambah
+        </button>
+      </div>
     </div>
   )
 }
@@ -424,11 +585,15 @@ function SettingsDashboard() {
   const lastSynced = useMasjidStore((s) => s.lastSynced)
   const setStoreLastSynced = useMasjidStore((s) => s.setLastSynced)
   const storeIsAuthenticated = useMasjidStore((s) => s.setIsAuthenticated)
+  const previewMode = useMasjidStore((s) => s.previewMode)
+  const setPreviewMode = useMasjidStore((s) => s.setPreviewMode)
   const { logout: deviceLogout } = useDevice()
 
   // ─── LOCAL STATE: form edits live here, never overwritten by store ─
   const [formState, setFormState] = useState<MasjidConfig>(() => storeConfig)
   const [saving, setSaving] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
+  const [imageUploading, setImageUploading] = useState<Record<number, boolean>>({})
   const formStateRef = useRef(formState)
   formStateRef.current = formState
 
@@ -480,6 +645,61 @@ function SettingsDashboard() {
     toast.info('Anda telah keluar')
   }, [deviceLogout])
 
+  // ─── Close Preview Overlay ────────────────────────────────────────
+  const closePreview = useCallback(() => {
+    setPreviewMode('none')
+    setShowPreview(false)
+  }, [setPreviewMode])
+
+  // When MosqueDisplay's internal close button sets previewMode to 'none',
+  // also close our overlay so the user returns to settings
+  const justOpenedPreview = useRef(false)
+
+  const openPreview = useCallback(() => {
+    setPreviewMode('none')
+    justOpenedPreview.current = true
+    setShowPreview(true)
+    // Reset the flag after a tick so the useEffect doesn't trigger
+    setTimeout(() => { justOpenedPreview.current = false }, 100)
+  }, [setPreviewMode])
+
+  const openPreviewAdhan = useCallback(() => {
+    setPreviewMode('adhan')
+    justOpenedPreview.current = true
+    setShowPreview(true)
+    setTimeout(() => { justOpenedPreview.current = false }, 100)
+  }, [setPreviewMode])
+
+  const openPreviewIqomah = useCallback(() => {
+    setPreviewMode('iqomah')
+    justOpenedPreview.current = true
+    setShowPreview(true)
+    setTimeout(() => { justOpenedPreview.current = false }, 100)
+  }, [setPreviewMode])
+
+  const openPreviewInfo = useCallback(() => {
+    setPreviewMode('info')
+    justOpenedPreview.current = true
+    setShowPreview(true)
+    setTimeout(() => { justOpenedPreview.current = false }, 100)
+  }, [setPreviewMode])
+
+  const openPreviewPostIqomah = useCallback(() => {
+    setPreviewMode('post-iqomah')
+    justOpenedPreview.current = true
+    setShowPreview(true)
+    setTimeout(() => { justOpenedPreview.current = false }, 100)
+  }, [setPreviewMode])
+
+  useEffect(() => {
+    if (showPreview && previewMode === 'none' && !justOpenedPreview.current) {
+      const timer = setTimeout(() => {
+        setShowPreview(false)
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [previewMode, showPreview])
+
   // ─── Prayer times helpers (use local state) ──────────────────────
   const updatePrayerTime = useCallback(
     (index: number, field: keyof PrayerTime, value: string | boolean) => {
@@ -518,6 +738,113 @@ function SettingsDashboard() {
     }))
   }, [])
 
+  // ─── Information items helpers (use local state) ──────────────────
+  const addInformationItem = useCallback(() => {
+    const newItem: InformationItem = {
+      id: `info_${Date.now()}`,
+      title: 'Pengajian',
+      description: 'Keterangan pengajian',
+      imageUrl: '',
+      imageFileName: '',
+      active: true,
+      scheduleEnabled: false,
+      displayStartTime: '08:00',
+      displayEndTime: '17:00',
+    }
+    setFormState((prev) => ({
+      ...prev,
+      informationItems: [...(prev.informationItems || []), newItem],
+    }))
+  }, [])
+
+  const updateInformationItem = useCallback((index: number, field: keyof InformationItem, value: string | boolean) => {
+    setFormState((prev) => {
+      const updated = [...(prev.informationItems || [])]
+      updated[index] = { ...updated[index], [field]: value }
+      return { ...prev, informationItems: updated }
+    })
+  }, [])
+
+  const removeInformationItem = useCallback((index: number) => {
+    setFormState((prev) => ({
+      ...prev,
+      informationItems: (prev.informationItems || []).filter((_, i) => i !== index),
+    }))
+  }, [])
+
+  const handleImageUpload = useCallback(async (index: number, file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('File harus berupa gambar')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Ukuran gambar maksimal 2MB')
+      return
+    }
+
+    setImageUploading((prev) => ({ ...prev, [index]: true }))
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Upload gagal')
+      }
+
+      // Update the information item with the URL and file name
+      setFormState((prev) => {
+        const updated = [...(prev.informationItems || [])]
+        updated[index] = {
+          ...updated[index],
+          imageUrl: data.url,
+          imageFileName: data.fileName,
+        }
+        return { ...prev, informationItems: updated }
+      })
+
+      toast.success('Gambar berhasil diupload ke cloud!')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Upload gagal'
+      toast.error(msg)
+    } finally {
+      setImageUploading((prev) => ({ ...prev, [index]: false }))
+    }
+  }, [])
+
+  const handleImageDelete = useCallback(async (index: number, fileName: string) => {
+    // Remove from local state immediately
+    setFormState((prev) => {
+      const updated = [...(prev.informationItems || [])]
+      updated[index] = {
+        ...updated[index],
+        imageUrl: '',
+        imageFileName: '',
+      }
+      return { ...prev, informationItems: updated }
+    })
+
+    // Try to delete from Supabase Storage in background
+    if (fileName) {
+      try {
+        await fetch('/api/upload', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName }),
+        })
+      } catch {
+        // Silent fail - image already removed from config
+      }
+    }
+
+    toast.success('Gambar berhasil dihapus')
+  }, [])
+
   // ─── Shorthand alias for readability ──────────────────────────────
   const c = formState
 
@@ -543,6 +870,15 @@ function SettingsDashboard() {
                 ID: {deviceId}
               </Badge>
             )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={openPreview}
+              className="h-7 gap-1 text-[11px] text-zinc-400 hover:text-emerald-400"
+            >
+              <Eye className="h-3 w-3" />
+              Preview
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -578,7 +914,7 @@ function SettingsDashboard() {
         <div className="mx-auto max-w-lg space-y-3 p-4">
           <Accordion
             type="multiple"
-            defaultValue={['mosque', 'clock', 'prayer', 'adhan', 'running', 'theme']}
+            defaultValue={['mosque', 'clock', 'prayer', 'adhan', 'running', 'info', 'theme']}
             className="space-y-3"
           >
             {/* ─── Section A: Nama Masjid & Tanggal ─────────────────── */}
@@ -716,6 +1052,180 @@ function SettingsDashboard() {
               </AccordionContent>
             </AccordionItem>
 
+            {/* ─── Section: Pengaturan Waktu ────────────────────── */}
+            <AccordionItem value="timezone" className="rounded-xl border border-zinc-800 bg-zinc-900 px-4">
+              <AccordionTrigger className="py-4 text-sm font-medium text-zinc-200 hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-amber-400" />
+                  Pengaturan Waktu
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-4 pb-4">
+                {/* Auto / Manual toggle */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-zinc-400">Mode Waktu</Label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => updateForm({ timezoneMode: 'auto' })}
+                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                        c.timezoneMode === 'auto'
+                          ? 'border-amber-500/50 bg-amber-500/10 text-amber-400'
+                          : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
+                      }`}
+                    >
+                      <MapPin className="h-3.5 w-3.5" />
+                      Otomatis (GPS)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateForm({ timezoneMode: 'manual' })}
+                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                        c.timezoneMode === 'manual'
+                          ? 'border-amber-500/50 bg-amber-500/10 text-amber-400'
+                          : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
+                      }`}
+                    >
+                      <Clock className="h-3.5 w-3.5" />
+                      Manual
+                    </button>
+                  </div>
+                </div>
+
+                {c.timezoneMode === 'auto' && (
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-800/50 px-3 py-2.5">
+                    <p className="text-[10px] text-zinc-500">
+                      Deteksi zona waktu perangkat:
+                    </p>
+                    <p className="mt-0.5 text-xs font-medium text-amber-400">
+                      {typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'N/A'}
+                    </p>
+                    <p className="mt-0.5 text-[10px] text-zinc-600">
+                      Waktu saat ini: {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </p>
+                  </div>
+                )}
+
+                {c.timezoneMode === 'manual' && (
+                  <div className="space-y-3">
+                    <p className="text-[10px] text-zinc-500">
+                      Atur koreksi waktu secara manual (tambah/kurangi jam, menit, detik dari waktu perangkat)
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {/* Hours */}
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-zinc-500">Jam</Label>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => updateForm({ timeCorrectionHours: Math.min(c.timeCorrectionHours + 1, 12) })}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+                          >
+                            +
+                          </button>
+                          <Input
+                            type="number"
+                            min={-12}
+                            max={12}
+                            value={c.timeCorrectionHours}
+                            onChange={(e) => {
+                              const v = parseInt(e.target.value) || 0
+                              updateForm({ timeCorrectionHours: Math.max(-12, Math.min(12, v)) })
+                            }}
+                            className="h-8 bg-zinc-800 border-zinc-700 text-center text-sm text-zinc-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => updateForm({ timeCorrectionHours: Math.max(c.timeCorrectionHours - 1, -12) })}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+                          >
+                            −
+                          </button>
+                        </div>
+                      </div>
+                      {/* Minutes */}
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-zinc-500">Menit</Label>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => updateForm({ timeCorrectionMinutes: Math.min(c.timeCorrectionMinutes + 1, 59) })}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+                          >
+                            +
+                          </button>
+                          <Input
+                            type="number"
+                            min={-59}
+                            max={59}
+                            value={c.timeCorrectionMinutes}
+                            onChange={(e) => {
+                              const v = parseInt(e.target.value) || 0
+                              updateForm({ timeCorrectionMinutes: Math.max(-59, Math.min(59, v)) })
+                            }}
+                            className="h-8 bg-zinc-800 border-zinc-700 text-center text-sm text-zinc-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => updateForm({ timeCorrectionMinutes: Math.max(c.timeCorrectionMinutes - 1, -59) })}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+                          >
+                            −
+                          </button>
+                        </div>
+                      </div>
+                      {/* Seconds */}
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-zinc-500">Detik</Label>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => updateForm({ timeCorrectionSeconds: Math.min(c.timeCorrectionSeconds + 1, 59) })}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+                          >
+                            +
+                          </button>
+                          <Input
+                            type="number"
+                            min={-59}
+                            max={59}
+                            value={c.timeCorrectionSeconds}
+                            onChange={(e) => {
+                              const v = parseInt(e.target.value) || 0
+                              updateForm({ timeCorrectionSeconds: Math.max(-59, Math.min(59, v)) })
+                            }}
+                            className="h-8 bg-zinc-800 border-zinc-700 text-center text-sm text-zinc-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => updateForm({ timeCorrectionSeconds: Math.max(c.timeCorrectionSeconds - 1, -59) })}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+                          >
+                            −
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Preview corrected time */}
+                    <div className="rounded-lg border border-zinc-800 bg-zinc-800/50 px-3 py-2.5">
+                      <p className="text-[10px] text-zinc-500">Preview waktu setelah koreksi:</p>
+                      <p className="mt-0.5 text-sm font-mono font-bold text-amber-400">
+                        {(() => {
+                          const now = new Date()
+                          const correctionSec = (c.timeCorrectionHours * 3600) + (c.timeCorrectionMinutes * 60) + c.timeCorrectionSeconds
+                          const corrected = new Date(now.getTime() + correctionSec * 1000)
+                          return corrected.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                        })()}
+                      </p>
+                    </div>
+                    <p className="text-[10px] text-zinc-600">
+                      Gunakan minus (−) jika waktu perangkat lebih cepat dari waktu sebenarnya
+                    </p>
+                  </div>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+
             {/* ─── Section B: Jam Utama ────────────────────────────── */}
             <AccordionItem value="clock" className="rounded-xl border border-zinc-800 bg-zinc-900 px-4">
               <AccordionTrigger className="py-4 text-sm font-medium text-zinc-200 hover:no-underline">
@@ -834,6 +1344,33 @@ function SettingsDashboard() {
                   checked={c.showSeconds}
                   onChange={(v) => updateForm({ showSeconds: v })}
                 />
+
+                {/* Clock Animation */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-zinc-400">Animasi Jam</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: 'none', label: 'Tanpa Animasi' },
+                      { value: 'glow', label: 'Glow' },
+                      { value: 'pulse', label: 'Pulse' },
+                      { value: 'retro-blink', label: 'Retro Blink' },
+                      { value: 'fade-breathe', label: 'Fade Breathe' },
+                    ].map((a) => (
+                      <button
+                        key={a.value}
+                        type="button"
+                        onClick={() => updateForm({ clockAnimation: a.value as MasjidConfig['clockAnimation'] })}
+                        className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-all ${
+                          (c.clockAnimation || 'none') === a.value
+                            ? 'border-amber-500 bg-amber-500/10 text-amber-400'
+                            : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
+                        }`}
+                      >
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </AccordionContent>
             </AccordionItem>
 
@@ -917,6 +1454,17 @@ function SettingsDashboard() {
                   </div>
                 )}
 
+                {/* Prayer Card Font Size */}
+                <SliderField
+                  label="Ukuran Font Kartu Sholat"
+                  value={c.prayerCardFontSize}
+                  onChange={(v) => updateForm({ prayerCardFontSize: v })}
+                  min={0.5}
+                  max={2.5}
+                  step={0.1}
+                  unit="x"
+                />
+
                 <Separator className="bg-zinc-800" />
 
                 {/* Card Color */}
@@ -974,20 +1522,38 @@ function SettingsDashboard() {
                   description="Tampilan layar penuh saat waktu adhan tiba"
                 />
 
-                {/* Adhan Duration */}
                 {c.adhanModeEnabled && (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-zinc-400">Durasi Adhan</Label>
-                    <ButtonGroup
-                      options={[
-                        { value: '120', label: '2 menit' },
-                        { value: '180', label: '3 menit' },
-                        { value: '300', label: '5 menit' },
-                      ]}
-                      value={String(c.adhanDuration)}
-                      onChange={(v) => updateForm({ adhanDuration: Number(v) })}
-                    />
-                  </div>
+                  <>
+                    {/* Adhan Duration */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-zinc-400">Durasi Adhan</Label>
+                      <ButtonGroup
+                        options={[
+                          { value: '120', label: '2 menit' },
+                          { value: '180', label: '3 menit' },
+                          { value: '300', label: '5 menit' },
+                        ]}
+                        value={String(c.adhanDuration)}
+                        onChange={(v) => updateForm({ adhanDuration: Number(v) })}
+                      />
+                    </div>
+
+                    {/* Adhan Countdown Animation */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-zinc-400">Animasi Hitung Mundur Adhan</Label>
+                      <ButtonGroup
+                        options={[
+                          { value: 'pulse', label: 'Pulse' },
+                          { value: 'glow', label: 'Glow' },
+                          { value: 'blink', label: 'Blink' },
+                          { value: 'scale', label: 'Scale' },
+                          { value: 'none', label: 'Tanpa Animasi' },
+                        ]}
+                        value={c.adhanCountdownAnimation || 'pulse'}
+                        onChange={(v) => updateForm({ adhanCountdownAnimation: v as 'pulse' | 'glow' | 'blink' | 'scale' | 'none' })}
+                      />
+                    </div>
+                  </>
                 )}
 
                 <Separator className="bg-zinc-800" />
@@ -1069,31 +1635,167 @@ function SettingsDashboard() {
                         ))}
                       </div>
                     </div>
+
+                    {/* Iqomah Countdown Animation */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-zinc-400">Animasi Hitung Mundur Iqomah</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { value: 'pulse', label: 'Pulse' },
+                          { value: 'led-jadul', label: 'LED Jadul' },
+                          { value: 'glow', label: 'Glow' },
+                          { value: 'blink', label: 'Blink' },
+                          { value: 'scale', label: 'Scale' },
+                          { value: 'none', label: 'Tanpa Animasi' },
+                        ].map((a) => (
+                          <button
+                            key={a.value}
+                            type="button"
+                            onClick={() => updateForm({ iqomahCountdownAnimation: a.value as MasjidConfig['iqomahCountdownAnimation'] })}
+                            className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-all ${
+                              (c.iqomahCountdownAnimation || 'pulse') === a.value
+                                ? 'border-amber-500 bg-amber-500/10 text-amber-400'
+                                : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
+                            }`}
+                          >
+                            {a.value === 'led-jadul' && <span className="text-sm">📺</span>}
+                            {a.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Post-Iqomah Message */}
+                {c.iqomahModeEnabled && (
+                  <ToggleSwitch
+                    label="Tampilkan Pesan Setelah Iqomah"
+                    checked={c.postIqomahEnabled}
+                    onChange={(v) => updateForm({ postIqomahEnabled: v })}
+                    description='Tampilkan "Selamat Menunaikan Ibadah Shalat" selama 2 menit setelah iqomah'
+                  />
+                )}
+
+                {/* Hadith / Ayat Collection Management */}
+                {c.postIqomahEnabled && (
+                  <>
+                    <Separator className="bg-zinc-800" />
+                    <SectionLabel>Koleksi Hadits & Ayat Al-Quran</SectionLabel>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed">
+                      Hadits dan ayat akan ditampilkan bergantian pada layar shalat (setelah iqomah). Tambahkan koleksi Anda di bawah ini.
+                    </p>
+
+                    {/* Existing hadith list */}
+                    <div className="space-y-2 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+                      {(c.hadithCollection || []).map((item, idx) => (
+                        <div
+                          key={item.id}
+                          className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 space-y-2"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                                  item.type === 'ayat'
+                                    ? 'bg-emerald-500/15 text-emerald-400'
+                                    : 'bg-amber-500/15 text-amber-400'
+                                }`}
+                              >
+                                {item.type === 'ayat' ? 'Ayat' : 'Hadits'}
+                              </span>
+                              <span className="text-[10px] text-zinc-500">#{idx + 1}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => {
+                                  const updated = [...(c.hadithCollection || [])]
+                                  updated[idx] = { ...updated[idx], active: !updated[idx].active }
+                                  updateForm({ hadithCollection: updated })
+                                }}
+                                className={`flex h-6 w-10 items-center rounded-full px-0.5 transition-colors ${
+                                  item.active ? 'bg-amber-500' : 'bg-zinc-700'
+                                }`}
+                              >
+                                <div
+                                  className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                                    item.active ? 'translate-x-4' : ''
+                                  }`}
+                                />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const updated = (c.hadithCollection || []).filter((_, i) => i !== idx)
+                                  updateForm({ hadithCollection: updated })
+                                }}
+                                className="flex h-6 w-6 items-center justify-center rounded text-zinc-500 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
+                          {/* Arabic text */}
+                          <div className="rounded bg-zinc-800/50 px-2.5 py-1.5">
+                            <p className="text-right text-sm leading-relaxed text-zinc-200 font-amiri" dir="rtl">
+                              {item.arabic}
+                            </p>
+                          </div>
+                          {/* Meaning */}
+                          <p className="text-xs text-zinc-400 italic pl-3 border-l-2 border-zinc-700">
+                            {item.meaning}
+                          </p>
+                          {/* Source */}
+                          <p className="text-[10px] text-zinc-600 font-semibold tracking-wide">
+                            {item.source}
+                          </p>
+                        </div>
+                      ))}
+                      {(c.hadithCollection || []).length === 0 && (
+                        <div className="rounded-lg border border-dashed border-zinc-800 py-6 text-center">
+                          <BookOpen className="mx-auto mb-2 h-6 w-6 text-zinc-600" />
+                          <p className="text-xs text-zinc-500">Belum ada hadits atau ayat</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Add new hadith/ayat */}
+                    <AddHadithForm
+                      onAdd={(item) => {
+                        const collection = c.hadithCollection || []
+                        updateForm({ hadithCollection: [...collection, item] })
+                      }}
+                    />
                   </>
                 )}
 
                 {/* Preview Buttons */}
                 <Separator className="bg-zinc-800" />
                 <SectionLabel>Preview Tampilan</SectionLabel>
-                <div className="grid grid-cols-2 gap-2">
-                  <Link href="/?preview=adhan">
-                    <Button
-                      variant="outline"
-                      className="w-full border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:border-amber-500/50 hover:text-amber-400 hover:bg-amber-500/10"
-                    >
-                      <Eye className="mr-2 h-4 w-4" />
-                      Preview Adhan
-                    </Button>
-                  </Link>
-                  <Link href="/?preview=iqomah">
-                    <Button
-                      variant="outline"
-                      className="w-full border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:border-red-500/50 hover:text-red-400 hover:bg-red-500/10"
-                    >
-                      <Eye className="mr-2 h-4 w-4" />
-                      Preview Iqomah
-                    </Button>
-                  </Link>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={openPreviewAdhan}
+                    className="w-full border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:border-amber-500/50 hover:text-amber-400 hover:bg-amber-500/10"
+                  >
+                    <Eye className="mr-1 h-3.5 w-3.5" />
+                    <span className="text-[10px]">Adhan</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={openPreviewIqomah}
+                    className="w-full border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:border-red-500/50 hover:text-red-400 hover:bg-red-500/10"
+                  >
+                    <Eye className="mr-1 h-3.5 w-3.5" />
+                    <span className="text-[10px]">Iqomah</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={openPreviewPostIqomah}
+                    className="w-full border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:border-emerald-500/50 hover:text-emerald-400 hover:bg-emerald-500/10"
+                  >
+                    <Eye className="mr-1 h-3.5 w-3.5" />
+                    <span className="text-[10px]">Shalat</span>
+                  </Button>
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -1201,7 +1903,289 @@ function SettingsDashboard() {
               </AccordionContent>
             </AccordionItem>
 
-            {/* ─── Section F: Tema & Tampilan ──────────────────────── */}
+            {/* ─── Section F: Informasi Pengajian ──────────────────── */}
+            <AccordionItem value="info" className="rounded-xl border border-zinc-800 bg-zinc-900 px-4">
+              <AccordionTrigger className="py-4 text-sm font-medium text-zinc-200 hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <FileImage className="h-4 w-4 text-amber-400" />
+                  Informasi & Pengajian
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-4 pb-4">
+                <InfoBanner>
+                  Tambahkan informasi pengajian, kajian, atau acara masjid. Gambar disimpan di cloud Supabase. Atur jadwal tampil masing-masing informasi.
+                </InfoBanner>
+
+                <ToggleSwitch
+                  label="Tampilkan Informasi di Layar Utama"
+                  checked={c.informationEnabled}
+                  onChange={(v) => updateForm({ informationEnabled: v })}
+                  description="Informasi aktif akan ditampilkan bergantian di layar"
+                />
+
+                {c.informationEnabled && (
+                  <>
+                    <Separator className="bg-zinc-800" />
+                    <SectionLabel>Pengaturan Tampilan Informasi</SectionLabel>
+
+                    {/* Info Title Position */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-zinc-400">Posisi Judul & Deskripsi</Label>
+                      <ButtonGroup
+                        options={[
+                          { value: 'top-left', label: 'Atas Kiri (dalam gambar)' },
+                          { value: 'top-right', label: 'Atas Kanan (dalam gambar)' },
+                          { value: 'inside-image', label: 'Bawah Tengah (dalam gambar)' },
+                        ]}
+                        value={c.infoTitlePosition || 'top-left'}
+                        onChange={(v) => updateForm({ infoTitlePosition: v as 'top-left' | 'top-right' | 'inside-image' })}
+                      />
+                    </div>
+
+                    {/* Info Title Font Color */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-zinc-400">Warna Font Judul</Label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="color"
+                          value={c.infoTitleFontColor || '#ffffff'}
+                          onChange={(e) => updateForm({ infoTitleFontColor: e.target.value })}
+                          className="h-8 w-12 cursor-pointer rounded border border-zinc-700 bg-transparent"
+                        />
+                        <Input
+                          value={c.infoTitleFontColor || '#ffffff'}
+                          onChange={(e) => updateForm({ infoTitleFontColor: e.target.value })}
+                          className="flex-1 bg-zinc-800 border-zinc-700 text-xs text-zinc-200 font-mono"
+                          maxLength={7}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Info Title Font Family */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-zinc-400">Font Judul</Label>
+                      <Select
+                        value={c.infoTitleFontFamily || "'Amiri', serif"}
+                        onValueChange={(v) => updateForm({ infoTitleFontFamily: v })}
+                      >
+                        <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 text-sm text-zinc-200">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="border-zinc-800 bg-zinc-900">
+                          {FONT_OPTIONS_RUNNING.map((f) => (
+                            <SelectItem key={f.value} value={f.value} className="text-zinc-300">
+                              {f.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Info Title Font Size */}
+                    <SliderField
+                      label="Ukuran Font Judul"
+                      value={c.infoTitleFontSize || 2.5}
+                      onChange={(v) => updateForm({ infoTitleFontSize: v })}
+                      min={0.5}
+                      max={5}
+                      step={0.1}
+                      unit="rem"
+                    />
+
+                    {/* Info Description Font Family */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-zinc-400">Font Deskripsi</Label>
+                      <Select
+                        value={c.infoDescriptionFontFamily || "'Inter', sans-serif"}
+                        onValueChange={(v) => updateForm({ infoDescriptionFontFamily: v })}
+                      >
+                        <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 text-sm text-zinc-200">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="border-zinc-800 bg-zinc-900">
+                          {FONT_OPTIONS_RUNNING.map((f) => (
+                            <SelectItem key={f.value} value={f.value} className="text-zinc-300">
+                              {f.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Info Description Font Size */}
+                    <SliderField
+                      label="Ukuran Font Deskripsi"
+                      value={c.infoDescriptionFontSize || 1.2}
+                      onChange={(v) => updateForm({ infoDescriptionFontSize: v })}
+                      min={0.5}
+                      max={3}
+                      step={0.1}
+                      unit="rem"
+                    />
+
+                    {/* Info Image Size */}
+                    <SliderField
+                      label="Ukuran Gambar Informasi"
+                      value={c.infoImageSize || 85}
+                      onChange={(v) => updateForm({ infoImageSize: v })}
+                      min={30}
+                      max={100}
+                      step={5}
+                      unit="%"
+                    />
+                  </>
+                )}
+
+                {c.informationItems?.length > 0 && (
+                  <div className="space-y-3">
+                    <SectionLabel>Daftar Informasi</SectionLabel>
+                    <div className="max-h-[500px] space-y-3 overflow-y-auto pr-1">
+                      {c.informationItems.map((item, idx) => (
+                        <div
+                          key={item.id}
+                          className="space-y-2 rounded-lg border border-zinc-800 bg-zinc-800/50 p-3"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <ToggleSwitch
+                              label={item.title || 'Tanpa Judul'}
+                              checked={item.active}
+                              onChange={(v) => updateInformationItem(idx, 'active', v)}
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeInformationItem(idx)}
+                              className="h-7 w-7 shrink-0 text-zinc-600 hover:text-red-400"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                          <Input
+                            value={item.title}
+                            onChange={(e) => updateInformationItem(idx, 'title', e.target.value)}
+                            className="h-8 border-zinc-700 bg-zinc-900 text-xs text-zinc-300"
+                            placeholder="Judul (contoh: Pengajian Minggu)"
+                          />
+                          <Textarea
+                            value={item.description}
+                            onChange={(e) => updateInformationItem(idx, 'description', e.target.value)}
+                            className="min-h-16 resize-none border-zinc-700 bg-zinc-900 text-xs text-zinc-300"
+                            placeholder="Keterangan detail..."
+                          />
+
+                          {/* Image Upload to Supabase */}
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-zinc-500">Gambar (opsional, max 2MB)</Label>
+                            {item.imageUrl ? (
+                              <div className="relative">
+                                <img
+                                  src={item.imageUrl}
+                                  alt={item.title}
+                                  className="h-32 w-full rounded-lg border border-zinc-700 object-cover"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleImageDelete(idx, item.imageFileName)}
+                                  className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500/80 text-white hover:bg-red-500"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-700 bg-zinc-900/50 px-4 py-4 transition-colors hover:border-amber-500/50 hover:bg-zinc-800">
+                                {imageUploading[idx] ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 animate-spin text-amber-400" />
+                                    <span className="text-xs text-amber-400">Mengupload...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <ImageUp className="h-4 w-4 text-zinc-500" />
+                                    <span className="text-xs text-zinc-500">Upload Gambar</span>
+                                  </>
+                                )}
+                                <input
+                                  type="file"
+                                  accept="image/jpeg,image/png,image/gif,image/webp"
+                                  className="hidden"
+                                  disabled={imageUploading[idx]}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0]
+                                    if (file) handleImageUpload(idx, file)
+                                  }}
+                                />
+                              </label>
+                            )}
+                          </div>
+
+                          {/* Schedule Settings */}
+                          <div className="space-y-2 rounded-lg border border-zinc-700/50 bg-zinc-900/50 p-3">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-xs text-zinc-400">Atur Jadwal Tampil</Label>
+                              <ToggleSwitch
+                                label=""
+                                checked={!!item.scheduleEnabled}
+                                onChange={(v) => updateInformationItem(idx, 'scheduleEnabled', v)}
+                              />
+                            </div>
+                            {item.scheduleEnabled && (
+                              <div className="space-y-2">
+                                <InfoBanner>
+                                  Informasi tidak akan tampil saat jam sholat dan iqomah. Setelah iqomah selesai, tampilan akan kembali aktif.
+                                </InfoBanner>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div className="space-y-1">
+                                    <Label className="text-[10px] text-zinc-500">Mulai Jam</Label>
+                                    <input
+                                      type="time"
+                                      value={item.displayStartTime || '08:00'}
+                                      onChange={(e) => updateInformationItem(idx, 'displayStartTime', e.target.value)}
+                                      className="h-8 w-full rounded border border-zinc-700 bg-zinc-800 px-2 text-xs text-zinc-300 [color-scheme:dark]"
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-[10px] text-zinc-500">Sampai Jam</Label>
+                                    <input
+                                      type="time"
+                                      value={item.displayEndTime || '17:00'}
+                                      onChange={(e) => updateInformationItem(idx, 'displayEndTime', e.target.value)}
+                                      className="h-8 w-full rounded border border-zinc-700 bg-zinc-800 px-2 text-xs text-zinc-300 [color-scheme:dark]"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <Button
+                  variant="ghost"
+                  onClick={addInformationItem}
+                  className="w-full border border-dashed border-zinc-700 text-xs text-zinc-500 hover:border-amber-500/50 hover:text-amber-400"
+                >
+                  <Plus className="h-3 w-3" />
+                  Tambah Informasi
+                </Button>
+
+                {/* Preview Button */}
+                <Separator className="bg-zinc-800" />
+                <SectionLabel>Preview Tampilan</SectionLabel>
+                <Button
+                  variant="outline"
+                  onClick={openPreviewInfo}
+                  className="w-full border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:border-emerald-500/50 hover:text-emerald-400 hover:bg-emerald-500/10"
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  Preview Informasi & Pengajian
+                </Button>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* ─── Section G: Tema & Tampilan ──────────────────────── */}
             <AccordionItem value="theme" className="rounded-xl border border-zinc-800 bg-zinc-900 px-4">
               <AccordionTrigger className="py-4 text-sm font-medium text-zinc-200 hover:no-underline">
                 <div className="flex items-center gap-2">
@@ -1213,8 +2197,10 @@ function SettingsDashboard() {
                 {/* Theme Selection */}
                 <div className="space-y-1.5">
                   <Label className="text-xs text-zinc-400">Pilih Tema</Label>
+                  {/* Dark themes section */}
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Gelap (Dark)</p>
                   <div className="grid grid-cols-1 gap-2">
-                    {THEME_OPTIONS.map((t) => (
+                    {THEME_OPTIONS.filter((t) => !t.isLight && !('layout' in t)).map((t) => (
                       <button
                         key={t.value}
                         type="button"
@@ -1226,25 +2212,112 @@ function SettingsDashboard() {
                         }`}
                       >
                         <div className="flex gap-1">
-                          <div
-                            className="h-8 w-8 rounded-lg"
-                            style={{ backgroundColor: t.accent }}
-                          />
-                          <div
-                            className="h-8 w-8 rounded-lg"
-                            style={{ backgroundColor: t.accentLight, opacity: 0.5 }}
-                          />
+                          <div className="h-8 w-8 rounded-lg" style={{ backgroundColor: t.accent }} />
+                          <div className="h-8 w-8 rounded-lg" style={{ backgroundColor: t.accentLight, opacity: 0.5 }} />
                         </div>
-                        <span
-                          className={`text-sm font-medium ${
-                            c.theme === t.value ? 'text-amber-400' : 'text-zinc-300'
-                          }`}
-                        >
+                        <span className={`text-sm font-medium ${c.theme === t.value ? 'text-amber-400' : 'text-zinc-300'}`}>
                           {t.label}
                         </span>
-                        {c.theme === t.value && (
-                          <ChevronRight className="ml-auto h-4 w-4 text-amber-400" />
-                        )}
+                        {c.theme === t.value && <ChevronRight className="ml-auto h-4 w-4 text-amber-400" />}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Light themes section */}
+                  <p className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Terang (Light)</p>
+                  <div className="grid grid-cols-1 gap-2">
+                    {THEME_OPTIONS.filter((t) => t.isLight && !('layout' in t)).map((t) => (
+                      <button
+                        key={t.value}
+                        type="button"
+                        onClick={() => updateForm({ theme: t.value })}
+                        className={`flex items-center gap-3 rounded-lg border p-3 text-left transition-all ${
+                          c.theme === t.value
+                            ? 'border-amber-500 bg-amber-500/5 ring-1 ring-amber-500/30'
+                            : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600'
+                        }`}
+                      >
+                        <div className="relative flex gap-1 overflow-hidden rounded-lg">
+                          <div className="h-8 w-8 rounded-l-lg border border-zinc-600/50" style={{ backgroundColor: t.bg || '#FAFAFA' }} />
+                          <div className="h-8 w-4 rounded-r-lg border border-zinc-600/50" style={{ backgroundColor: t.accent }} />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className={`text-sm font-medium ${c.theme === t.value ? 'text-amber-400' : 'text-zinc-300'}`}>
+                            {t.label}
+                          </span>
+                          <span className="text-[9px] text-zinc-500">Tema Terang</span>
+                        </div>
+                        {c.theme === t.value && <ChevronRight className="ml-auto h-4 w-4 text-amber-400" />}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Layout Variant themes section */}
+                  <p className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Tampilan Berbeda (Layout Variant)</p>
+                  <InfoBanner>
+                    Tema ini memiliki posisi tata letak yang berbeda, bukan hanya warna. Coba untuk pengalaman tampilan yang baru!
+                  </InfoBanner>
+                  <div className="grid grid-cols-1 gap-2">
+                    {THEME_OPTIONS.filter((t) => 'layout' in t).map((t) => (
+                      <button
+                        key={t.value}
+                        type="button"
+                        onClick={() => updateForm({ theme: t.value as MasjidConfig['theme'] })}
+                        className={`flex items-center gap-3 rounded-lg border p-3 text-left transition-all ${
+                          c.theme === t.value
+                            ? 'border-amber-500 bg-amber-500/5 ring-1 ring-amber-500/30'
+                            : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600'
+                        }`}
+                      >
+                        {/* Mini layout preview */}
+                        <div className="relative flex h-10 w-10 shrink-0 flex-col gap-0.5 overflow-hidden rounded-lg border border-zinc-600/50" style={{ backgroundColor: t.bg || '#111' }}>
+                          {/* Mini layout visualization */}
+                          {t.layout === 'nabawi' ? (
+                            <>
+                              <div className="flex flex-1 gap-px">
+                                <div className="flex-1 flex items-center justify-center">
+                                  <div className="h-1 w-2 rounded-sm" style={{ backgroundColor: t.accent, opacity: 0.6 }} />
+                                </div>
+                                <div className="w-2.5 border-l border-zinc-600/30" style={{ backgroundColor: t.accent, opacity: 0.15 }} />
+                              </div>
+                              <div className="h-0.5" style={{ backgroundColor: t.accent, opacity: 0.3 }} />
+                            </>
+                          ) : t.layout === 'makkah' ? (
+                            <>
+                              <div className="flex gap-px px-0.5 py-0.5" style={{ backgroundColor: t.accent, opacity: 0.15 }}>
+                                {[1,2,3,4,5].map(i => (
+                                  <div key={i} className="flex-1 rounded-sm" style={{ backgroundColor: t.accent, opacity: 0.3 }} />
+                                ))}
+                              </div>
+                              <div className="flex-1 flex items-center justify-center">
+                                <div className="h-1 w-2 rounded-sm" style={{ backgroundColor: t.accent, opacity: 0.6 }} />
+                              </div>
+                              <div className="h-0.5" style={{ backgroundColor: t.accent, opacity: 0.3 }} />
+                            </>
+                          ) : (
+                            <>
+                              <div className="flex flex-1 gap-px">
+                                <div className="flex-1 flex items-center justify-center">
+                                  <div className="h-1 w-1.5 rounded-sm" style={{ backgroundColor: t.accent, opacity: 0.6 }} />
+                                </div>
+                                <div className="w-px" style={{ backgroundColor: t.accent, opacity: 0.2 }} />
+                                <div className="flex-1 flex flex-col gap-px p-0.5">
+                                  {[1,2,3,4].map(i => (
+                                    <div key={i} className="h-0.5 w-full rounded-sm" style={{ backgroundColor: t.accent, opacity: 0.2 }} />
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="h-0.5" style={{ backgroundColor: t.accent, opacity: 0.3 }} />
+                            </>
+                          )}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className={`text-sm font-medium ${c.theme === t.value ? 'text-amber-400' : 'text-zinc-300'}`}>
+                            {t.label}
+                          </span>
+                          <span className="text-[9px] text-zinc-500 truncate">
+                            {t.description}
+                          </span>
+                        </div>
+                        {c.theme === t.value && <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-amber-400" />}
                       </button>
                     ))}
                   </div>
@@ -1312,6 +2385,87 @@ function SettingsDashboard() {
                           />
                         </div>
                       </div>
+
+                      {/* Background Image */}
+                      <Separator className="bg-zinc-700/50" />
+                      <div className="space-y-2">
+                        <Label className="text-xs text-zinc-400">Gambar Latar Belakang</Label>
+                        {c.customBackgroundImage ? (
+                          <div className="relative rounded-lg overflow-hidden border border-zinc-700">
+                            <img
+                              src={c.customBackgroundImage}
+                              alt="Background"
+                              className="w-full h-24 object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                            <button
+                              onClick={() => updateForm({ customBackgroundImage: '', customBackgroundOpacity: 30 })}
+                              className="absolute top-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white/70 hover:bg-red-500/80 hover:text-white transition-colors"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-zinc-700 py-4 text-zinc-500 transition-colors hover:border-amber-500/40 hover:bg-amber-500/5 hover:text-amber-400">
+                            <ImageUp className="h-5 w-5" />
+                            <span className="text-[10px] font-medium">Upload Gambar</span>
+                            <span className="text-[9px] text-zinc-600">JPG, PNG, WebP (maks 2MB)</span>
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp"
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0]
+                                if (!file) return
+                                if (file.size > 2 * 1024 * 1024) {
+                                  toast.error('Ukuran file maksimal 2MB')
+                                  return
+                                }
+                                try {
+                                  const formData = new FormData()
+                                  formData.append('file', file)
+                                  formData.append('folder', 'mosque-images')
+                                  const res = await fetch('/api/upload', {
+                                    method: 'POST',
+                                    body: formData,
+                                  })
+                                  if (!res.ok) throw new Error('Upload gagal')
+                                  const data = await res.json()
+                                  updateForm({ customBackgroundImage: data.url })
+                                  toast.success('Gambar berhasil diupload')
+                                } catch {
+                                  // Convert to base64 as fallback
+                                  const reader = new FileReader()
+                                  reader.onload = () => {
+                                    updateForm({ customBackgroundImage: reader.result as string })
+                                    toast.success('Gambar berhasil diupload')
+                                  }
+                                  reader.readAsDataURL(file)
+                                }
+                                e.target.value = ''
+                              }}
+                            />
+                          </label>
+                        )}
+                      </div>
+
+                      {/* Background Opacity */}
+                      {c.customBackgroundImage && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs text-zinc-400">Opacity Gambar</Label>
+                            <span className="text-xs font-mono text-zinc-500">{c.customBackgroundOpacity || 30}%</span>
+                          </div>
+                          <Slider
+                            value={[c.customBackgroundOpacity || 30]}
+                            onValueChange={([v]) => updateForm({ customBackgroundOpacity: v })}
+                            min={5}
+                            max={100}
+                            step={5}
+                            className="py-1"
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1373,6 +2527,37 @@ function SettingsDashboard() {
           )}
         </div>
       </div>
+
+      {/* ─── Preview Overlay ────────────────────────────────────── */}
+      {showPreview && (
+        <div className="fixed inset-0 z-[100] flex flex-col bg-black">
+          {/* Close button bar */}
+          <div className="absolute top-0 left-0 right-0 z-[110] flex items-center justify-between px-4 py-2 bg-black/60 backdrop-blur-sm">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[11px] font-medium text-white/70">Preview Mode</span>
+              {previewMode !== 'none' && (
+                <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+                  {previewMode === 'adhan' ? 'Adhan' : previewMode === 'iqomah' ? 'Iqomah' : previewMode === 'post-iqomah' ? 'Shalat' : 'Informasi'}
+                </span>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={closePreview}
+              className="h-8 gap-1.5 text-white/70 hover:text-white hover:bg-white/10"
+            >
+              <X className="h-4 w-4" />
+              <span className="text-xs">Kembali ke Settings</span>
+            </Button>
+          </div>
+          {/* Mosque Display */}
+          <div className="flex-1">
+            <MosqueDisplay />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

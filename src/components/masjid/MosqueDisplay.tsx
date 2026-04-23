@@ -65,6 +65,11 @@ function formatTime(date: Date, showSec: boolean): string {
   return showSec ? `${h}:${m}:${s}` : `${h}:${m}`
 }
 
+/** Convert a Date to a time-corrected Date (adds/subtracts correction) */
+function getTimezonedDate(date: Date, correctionSeconds: number): Date {
+  return new Date(date.getTime() + correctionSeconds * 1000)
+}
+
 /** Format a Date to localized Gregorian date string */
 function formatDate(date: Date, lang: Lang): string {
   const day = date.getDate()
@@ -194,12 +199,23 @@ export default function MosqueDisplay() {
   const [now, setNow] = useState(() => new Date())
   const [language, setLanguage] = useState<Lang>(config.lang)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [activeInfoIndex, setActiveInfoIndex] = useState(0)
 
   // ---- Refs ----
   const lastBeepSecond = useRef(-1)
 
+  // ---- Derived: Effective time correction in seconds ----
+  const effectiveTimeCorrection = config.timezoneMode === 'manual'
+    ? (config.timeCorrectionHours * 3600) + (config.timeCorrectionMinutes * 60) + config.timeCorrectionSeconds
+    : 0
+
+  // ---- Derived: Time-corrected current time for display ----
+  const tzNow = getTimezonedDate(now, effectiveTimeCorrection)
+
   // ---- Derived: Theme ----
   const theme = THEMES[config.theme]
+  const isLight = theme.isLight
+  const layout = theme.layout || 'default'
 
   // ---- Derived: Main prayers sorted by time (for adhan/iqomah/overlay logic) ----
   const mainPrayers = [...config.prayerTimesTemplate]
@@ -211,7 +227,7 @@ export default function MosqueDisplay() {
     .sort((a, b) => timeToSeconds(a.time) - timeToSeconds(b.time))
 
   // ---- Derived: Current seconds since midnight ----
-  const currentSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds()
+  const currentSeconds = tzNow.getHours() * 3600 + tzNow.getMinutes() * 60 + tzNow.getSeconds()
 
   // ---- Derived: Next prayer + countdown ----
   let nextPrayer: PrayerTime | null = null
@@ -232,12 +248,13 @@ export default function MosqueDisplay() {
     }
   }
 
-  // ---- Derived: Active mode (normal / adhan / iqomah) ----
-  let activeMode: 'normal' | 'adhan' | 'iqomah' = 'normal'
+  // ---- Derived: Active mode (normal / adhan / iqomah / post-iqomah) ----
+  let activeMode: 'normal' | 'adhan' | 'iqomah' | 'post-iqomah' = 'normal'
   for (const prayer of mainPrayers) {
     const ps = timeToSeconds(prayer.time)
     const adhanStart = ps - config.adhanDuration
     const iqomahEnd = ps + config.iqomahMinutes * 60
+    const postIqomahEnd = iqomahEnd + 120 // 2 minutes after iqomah
 
     if (config.adhanModeEnabled && currentSeconds >= adhanStart && currentSeconds < ps) {
       activeMode = 'adhan'
@@ -245,6 +262,11 @@ export default function MosqueDisplay() {
     }
     if (config.iqomahModeEnabled && currentSeconds >= ps && currentSeconds < iqomahEnd) {
       activeMode = 'iqomah'
+      break
+    }
+    // Post-iqomah: 2 minutes after iqomah ends
+    if (config.postIqomahEnabled && config.iqomahModeEnabled && currentSeconds >= iqomahEnd && currentSeconds < postIqomahEnd) {
+      activeMode = 'post-iqomah'
       break
     }
   }
@@ -256,7 +278,8 @@ export default function MosqueDisplay() {
       const ps = timeToSeconds(prayer.time)
       const adhanStart = ps - config.adhanDuration
       const iqomahEnd = ps + config.iqomahMinutes * 60
-      if (currentSeconds >= adhanStart && currentSeconds < iqomahEnd) {
+      const postIqomahEnd = iqomahEnd + 120
+      if (currentSeconds >= adhanStart && currentSeconds < postIqomahEnd) {
         activePrayer = prayer
         break
       }
@@ -274,7 +297,46 @@ export default function MosqueDisplay() {
     if (!activePrayer) {
       activePrayer = nextPrayer || mainPrayers[0] || null
     }
+  } else if (previewMode === 'post-iqomah') {
+    activeMode = 'post-iqomah'
+    if (!activePrayer) {
+      activePrayer = nextPrayer || mainPrayers[0] || null
+    }
   }
+
+  // ---- Derived: is currently in prayer/iqomah blackout period? ----
+  const isPrayerBlackout = activeMode !== 'normal'
+
+  // ---- Derived: Scheduled info items ----
+  const activeInfoItems = (config.informationEnabled ? (config.informationItems || []) : [])
+    .filter((item) => {
+      if (!item.active) return false
+
+      // If in preview mode 'info', show all active items regardless of schedule
+      if (previewMode === 'info') return true
+
+      // If schedule not enabled, only show when not in prayer blackout
+      if (!item.scheduleEnabled) return !isPrayerBlackout
+
+      // Schedule enabled: check time window
+      const startSec = timeToSeconds(item.displayStartTime || '08:00')
+      const endSec = timeToSeconds(item.displayEndTime || '17:00')
+      let inTimeWindow = false
+      if (startSec <= endSec) {
+        inTimeWindow = currentSeconds >= startSec && currentSeconds < endSec
+      } else {
+        // Crosses midnight (e.g. 22:00 to 05:00)
+        inTimeWindow = currentSeconds >= startSec || currentSeconds < endSec
+      }
+
+      if (!inTimeWindow) return false
+
+      // In time window, but not during prayer blackout
+      return !isPrayerBlackout
+    })
+
+  // Should we show the info panel (not just the banner)?
+  const showInfoPanel = activeInfoItems.length > 0 && activeMode === 'normal'
 
   // ---- Derived: Overlay countdowns ----
   const adhanCountdown = !activePrayer || activeMode !== 'adhan'
@@ -350,6 +412,17 @@ export default function MosqueDisplay() {
     return () => document.removeEventListener('fullscreenchange', handler)
   }, [])
 
+  // ---- Effect: Rotate information items every 8 seconds ----
+  useEffect(() => {
+    if (activeInfoItems.length <= 1) return
+    const timer = setInterval(() => {
+      setActiveInfoIndex((prev) => (prev + 1) % activeInfoItems.length)
+    }, 8000)
+    return () => clearInterval(timer)
+  }, [activeInfoItems.length])
+
+  const currentInfoItem = activeInfoItems[activeInfoIndex] || null
+
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) {
       document.exitFullscreen()
@@ -375,90 +448,700 @@ export default function MosqueDisplay() {
           '--running-speed': `${config.runningSpeed}s`,
           '--prayer-card-bg': config.cardBgColor,
           '--prayer-card-border': config.cardBorderColor,
+          '--info-image-size': `${config.infoImageSize || 85}%`,
+          '--text-primary': theme.textPrimary,
+          '--text-muted': theme.textMuted,
           ...(config.theme === 'custom' ? {
             '--accent-gold': config.customThemeAccent || '#C9A84C',
           } : {}),
         } as React.CSSProperties
       }
     >
+      {/* Custom theme background image */}
+      {config.theme === 'custom' && config.customBackgroundImage && (
+        <div
+          className="theme-custom-bg-image"
+          style={{
+            backgroundImage: `url(${config.customBackgroundImage})`,
+            opacity: (config.customBackgroundOpacity || 30) / 100,
+          }}
+        />
+      )}
       {/* ======== HEADER BAR ======== */}
-      <header className="relative z-50 flex h-11 shrink-0 items-center justify-between border-b border-white/5 bg-black/60 px-3 backdrop-blur-sm sm:h-12 sm:px-5">
-        {/* Left: Logo + Title */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Mosque Logo SVG */}
-          <MosqueLogo size={24} />
-          <div className="flex flex-col leading-tight">
-            <span className="font-cinzel text-[10px] font-bold uppercase tracking-widest sm:text-xs" style={{ color: 'var(--accent-gold)' }}>
-              MasjidScreen
-            </span>
-            <span className="text-[9px] text-white/50 sm:text-[10px]">
-              {config.mosqueName.length > 30 ? config.mosqueName.slice(0, 30) + '...' : config.mosqueName}
-            </span>
-          </div>
-        </div>
-
-        {/* Center: Status */}
-        <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-2 sm:flex">
-          <div className={`status-dot ${activeMode === 'adhan' ? 'status-dot-adhan' : activeMode === 'iqomah' ? 'status-dot-iqomah' : 'status-dot-normal'}`} />
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-white/70 sm:text-xs">
-            {activeMode === 'adhan' ? 'Adhan' : activeMode === 'iqomah' ? 'Iqomah' : 'Normal'}
-          </span>
-        </div>
-
-        {/* Right: Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Device ID Badge - Prominent */}
-          {deviceId && (
-            <div className="hidden items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-2.5 py-1 sm:flex">
-              <span className="text-[9px] font-medium uppercase tracking-wider text-white/40">ID Perangkat</span>
-              <span className="font-mono text-sm font-bold tracking-wider" style={{ color: 'var(--accent-gold)' }}>
-                {deviceId.slice(0, 4)}
+      <header className={`relative z-50 flex min-h-[44px] shrink-0 items-center justify-between border-b px-3 backdrop-blur-sm sm:min-h-[48px] sm:px-5 ${isLight ? 'tv-header-light' : 'border-white/5 bg-black/60'}`}>
+        {/* Left: Mosque info (or Logo+Title when no info panel) */}
+        {showInfoPanel ? (
+          <div className="flex items-center gap-3">
+            <MosqueLogo size={22} />
+            <div className="flex flex-col leading-tight">
+              <span
+                className="font-amiri text-sm font-bold sm:text-base lg:text-lg"
+                style={{ color: 'var(--accent-gold)' }}
+              >
+                {config.mosqueNameArabic}
+              </span>
+              <span
+                className={isLight ? 'text-[10px] sm:text-xs' : 'text-[10px] text-white/60 sm:text-xs'}
+                style={{ fontFamily: config.mosqueNameFontFamily, color: isLight ? 'var(--text-primary)' : undefined }}
+              >
+                {config.mosqueName}
               </span>
             </div>
-          )}
-
-          {/* Language Selector */}
-          <div className="flex items-center rounded border border-white/10 overflow-hidden">
-            {(['id', 'ar', 'en'] as Lang[]).map((l) => (
-              <button
-                key={l}
-                onClick={() => setLanguage(l)}
-                className={`px-1.5 py-0.5 text-[9px] font-semibold uppercase transition-colors sm:px-2 sm:text-[10px] ${
-                  language === l
-                    ? 'bg-white/15 text-white'
-                    : 'bg-transparent text-white/40 hover:text-white/60'
-                }`}
-              >
-                {l}
-              </button>
-            ))}
           </div>
+        ) : (
+          <div className="flex items-center gap-2 sm:gap-3">
+            <MosqueLogo size={24} />
+            <div className="flex flex-col leading-tight">
+              <span className="font-cinzel text-[10px] font-bold uppercase tracking-widest sm:text-xs" style={{ color: 'var(--accent-gold)' }}>
+                MasjidScreen
+              </span>
+              <span className={isLight ? 'text-[9px] sm:text-[10px]' : 'text-[9px] text-white/50 sm:text-[10px]'} style={{ color: isLight ? 'var(--text-primary)' : undefined }}>
+                {config.mosqueName.length > 30 ? config.mosqueName.slice(0, 30) + '...' : config.mosqueName}
+              </span>
+            </div>
+          </div>
+        )}
 
-          {/* Fullscreen Toggle */}
-          <button
-            onClick={toggleFullscreen}
-            className="flex h-7 w-7 items-center justify-center rounded text-white/40 transition-colors hover:bg-white/10 hover:text-white/80 sm:h-8 sm:w-8"
-            aria-label="Toggle fullscreen"
-          >
-            {isFullscreen ? (
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M8 3v3a2 2 0 01-2 2H3m18 0h-3a2 2 0 01-2-2V3m0 18v-3a2 2 0 012-2h3M3 16h3a2 2 0 012 2v3" />
-              </svg>
+        {/* Center: Status (only when no info panel) */}
+        {!showInfoPanel && (
+          <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-2 sm:flex">
+            <div className={`status-dot ${activeMode === 'adhan' ? 'status-dot-adhan' : activeMode === 'iqomah' ? 'status-dot-iqomah' : 'status-dot-normal'}`} />
+            <span className={`text-[10px] font-semibold uppercase tracking-wider sm:text-xs ${isLight ? '' : 'text-white/70'}`} style={{ color: isLight ? 'var(--text-primary)' : undefined }}>
+              {activeMode === 'adhan' ? 'Adhan' : activeMode === 'iqomah' ? 'Iqomah' : 'Normal'}
+            </span>
+          </div>
+        )}
+
+        {/* Right: Clock (when info panel) or Controls */}
+        {showInfoPanel ? (
+          <div className="flex items-center gap-2">
+            {config.clockType === 'digital' ? (
+              <span
+                className="font-bold leading-none sm:text-2xl lg:text-3xl"
+                style={{
+                  fontFamily: config.digitalFontFamily,
+                  color: 'var(--accent-gold)',
+                  ...(config.clockStyle === 'retro' ? {
+                    textShadow: `0 0 10px var(--accent-gold), 0 0 20px var(--accent-gold)30`,
+                    letterSpacing: '0.05em',
+                  } : {}),
+                }}
+              >
+                {formatTime(tzNow, config.showSeconds)}
+              </span>
             ) : (
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" />
-              </svg>
+              <AnalogClockSVG
+                size={56}
+                hours={tzNow.getHours()}
+                minutes={tzNow.getMinutes()}
+                seconds={tzNow.getSeconds()}
+                numberStyle={config.analogNumberStyle}
+              />
             )}
-          </button>
-
-
-        </div>
+            <div className="hidden flex-col items-end text-right sm:flex">
+              <span
+                className={isLight ? 'text-[10px] sm:text-xs' : 'text-[10px] text-white/60 sm:text-xs'}
+                style={{
+                  fontFamily: config.dateFontFamily,
+                  fontSize: `calc(0.6rem * ${config.dateFontSize})`,
+                  color: isLight ? 'var(--text-primary)' : (config.dateColor || '#ffffff'),
+                }}
+              >
+                {formatDate(tzNow, language)}
+              </span>
+              {config.showHijri && (
+                <span
+                  className="font-amiri text-[9px] sm:text-[10px]"
+                  style={{
+                    color: isLight ? 'var(--accent-gold)' : (config.dateColor || 'var(--accent-gold)'),
+                  }}
+                >
+                  {formatHijriDate(tzNow, language)}
+                </span>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {deviceId && (
+              <div className={`hidden items-center gap-1.5 rounded-md border px-2.5 py-1 sm:flex ${isLight ? 'border-[var(--border-subtle)] bg-white/40' : 'border-white/10 bg-white/5'}`}>
+                <span className={`text-[9px] font-medium uppercase tracking-wider ${isLight ? '' : 'text-white/40'}`} style={{ color: isLight ? 'var(--text-primary)' : undefined }}>ID Perangkat</span>
+                <span className="font-mono text-sm font-bold tracking-wider" style={{ color: 'var(--accent-gold)' }}>
+                  {deviceId.slice(0, 4)}
+                </span>
+              </div>
+            )}
+            <div className={`flex items-center rounded border overflow-hidden ${isLight ? 'border-[var(--border-subtle)]' : 'border-white/10'}`}>
+              {(['id', 'ar', 'en'] as Lang[]).map((l) => (
+                <button
+                  key={l}
+                  onClick={() => setLanguage(l)}
+                  className={`px-1.5 py-0.5 text-[9px] font-semibold uppercase transition-colors sm:px-2 sm:text-[10px] ${
+                    language === l
+                      ? isLight ? 'bg-[var(--accent-gold)]/15 text-[var(--text-primary)]' : 'bg-white/15 text-white'
+                      : isLight ? 'bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]' : 'bg-transparent text-white/40 hover:text-white/60'
+                  }`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={toggleFullscreen}
+              className={`flex h-7 w-7 items-center justify-center rounded transition-colors sm:h-8 sm:w-8 ${isLight ? 'text-[var(--text-muted)] hover:bg-black/5 hover:text-[var(--text-primary)]' : 'text-white/40 hover:bg-white/10 hover:text-white/80'}`}
+              aria-label="Toggle fullscreen"
+            >
+              {isFullscreen ? (
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M8 3v3a2 2 0 01-2 2H3m18 0h-3a2 2 0 01-2-2V3m0 18v-3a2 2 0 012-2h3M3 16h3a2 2 0 012 2v3" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" />
+                </svg>
+              )}
+            </button>
+          </div>
+        )}
       </header>
 
       {/* ======== MAIN DISPLAY AREA ======== */}
       <main className="relative z-10 flex flex-1 flex-col overflow-hidden">
-        {/* ---- CENTER COLUMN: Main Content (full-width, centered) ---- */}
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 overflow-hidden px-4 py-4 sm:gap-4 sm:px-8 sm:py-6 lg:gap-5 lg:px-10 lg:py-8">
+        {/* ---- CENTER COLUMN: Main Content ---- */}
+        {showInfoPanel ? (
+          /* ═══ INFO PANEL LAYOUT: Full-screen info display ═══ */
+          <div className="info-panel-fullscreen">
+            <div className="info-panel-image-container">
+              {currentInfoItem?.imageUrl && (
+                <img
+                  src={currentInfoItem.imageUrl}
+                  alt={currentInfoItem.title}
+                />
+              )}
+
+              {/* No image fallback - show text centered */}
+              {!currentInfoItem?.imageUrl && currentInfoItem && (
+                <div className="flex flex-col items-center justify-center gap-4 px-8">
+                  <h2
+                    className="text-center font-bold"
+                    style={{
+                      color: config.infoTitleFontColor,
+                      fontSize: `calc(1.5rem * ${config.infoTitleFontSize})`,
+                      fontFamily: config.infoTitleFontFamily,
+                    }}
+                  >
+                    {currentInfoItem.title}
+                  </h2>
+                  {currentInfoItem.description && (
+                    <p className="max-w-2xl text-center text-white/60" style={{ fontSize: `${config.infoDescriptionFontSize}rem`, fontFamily: config.infoDescriptionFontFamily }}>
+                      {currentInfoItem.description}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Text overlay when image exists */}
+              {currentInfoItem?.imageUrl && (
+                config.infoTitlePosition === 'inside-image' ? (
+                  <div className="info-overlay-inside-image">
+                    <h2
+                      className="font-bold drop-shadow-lg"
+                      style={{
+                        color: config.infoTitleFontColor,
+                        fontSize: `calc(1rem * ${config.infoTitleFontSize})`,
+                        fontFamily: config.infoTitleFontFamily,
+                      }}
+                    >
+                      {currentInfoItem.title}
+                    </h2>
+                    {currentInfoItem.description && (
+                      <p className="mt-1 text-white/70 drop-shadow" style={{ fontSize: `${config.infoDescriptionFontSize}rem`, fontFamily: config.infoDescriptionFontFamily }}>
+                        {currentInfoItem.description}
+                      </p>
+                    )}
+                  </div>
+                ) : config.infoTitlePosition === 'top-left' ? (
+                  <div className="info-overlay-top-left">
+                    <h2
+                      className="font-bold drop-shadow-lg"
+                      style={{
+                        color: config.infoTitleFontColor,
+                        fontSize: `calc(0.8rem * ${config.infoTitleFontSize})`,
+                        fontFamily: config.infoTitleFontFamily,
+                      }}
+                    >
+                      {currentInfoItem.title}
+                    </h2>
+                    {currentInfoItem.description && (
+                      <p className="mt-1 text-white/70 drop-shadow" style={{ fontSize: `${config.infoDescriptionFontSize * 0.8}rem`, fontFamily: config.infoDescriptionFontFamily }}>
+                        {currentInfoItem.description}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="info-overlay-top-right">
+                    <h2
+                      className="font-bold drop-shadow-lg"
+                      style={{
+                        color: config.infoTitleFontColor,
+                        fontSize: `calc(0.8rem * ${config.infoTitleFontSize})`,
+                        fontFamily: config.infoTitleFontFamily,
+                      }}
+                    >
+                      {currentInfoItem.title}
+                    </h2>
+                    {currentInfoItem.description && (
+                      <p className="mt-1 text-white/70 drop-shadow" style={{ fontSize: `${config.infoDescriptionFontSize * 0.8}rem`, fontFamily: config.infoDescriptionFontFamily }}>
+                        {currentInfoItem.description}
+                      </p>
+                    )}
+                  </div>
+                )
+              )}
+
+              {/* Pagination dots - position at bottom center */}
+              {activeInfoItems.length > 1 && (
+                <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2">
+                  {activeInfoItems.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveInfoIndex(i)}
+                      className={`h-2.5 w-2.5 rounded-full border border-white/20 transition-all ${
+                        i === activeInfoIndex
+                          ? 'scale-125 bg-amber-400 border-amber-400'
+                          : 'bg-transparent hover:bg-white/20'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : layout === 'nabawi' ? (
+          /* ═══ NABAWI LAYOUT: Left content area + Right sidebar prayer cards ═══ */
+          <div className="flex flex-1 overflow-hidden">
+            {/* Left: Mosque name + Clock + Date */}
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 overflow-hidden px-4 py-4 sm:gap-4 sm:px-8 sm:py-6 lg:gap-5 lg:px-10 lg:py-8">
+              {/* Mosque Name */}
+              <div className="text-center">
+                <h1
+                  className="font-amiri leading-tight sm:text-2xl lg:text-3xl"
+                  style={{
+                    color: 'var(--accent-gold)',
+                    fontSize: `calc(1.25rem * ${config.mosqueNameFontSize})`,
+                    fontFamily: "'Amiri', serif",
+                  }}
+                >
+                  {config.mosqueNameArabic}
+                </h1>
+                <p
+                  className={isLight ? 'mt-0.5 sm:text-sm lg:text-base' : 'mt-0.5 text-white/70 sm:text-sm lg:text-base'}
+                  style={{
+                    fontFamily: config.mosqueNameFontFamily,
+                    fontSize: `calc(0.75rem * ${config.mosqueNameFontSize})`,
+                    color: isLight ? 'var(--text-primary)' : undefined,
+                  }}
+                >
+                  {config.mosqueName}
+                </p>
+              </div>
+
+              {/* Clock */}
+              {config.clockType === 'digital' ? (
+                <div className="flex flex-col items-center">
+                  <span
+                    className={`clock-digital font-bold leading-none ${config.clockAnimation && config.clockAnimation !== 'none' ? `clock-animation-${config.clockAnimation}` : ''}`}
+                    style={{
+                      fontFamily: config.digitalFontFamily,
+                      fontSize: `clamp(2rem, ${config.digitalFontSize}vw, ${config.digitalFontSize}rem)`,
+                      color: 'var(--accent-gold)',
+                      ...(config.clockStyle === 'retro' ? {
+                        textShadow: isLight
+                          ? `0 0 8px color-mix(in srgb, var(--accent-gold) 30%, transparent)`
+                          : `0 0 10px var(--accent-gold), 0 0 30px var(--accent-gold)40, 0 0 60px var(--accent-gold)20`,
+                        letterSpacing: '0.05em',
+                      } : config.clockStyle === 'minimal' ? {
+                        fontWeight: 300,
+                        letterSpacing: '0.15em',
+                        opacity: 0.9,
+                      } : {}),
+                    }}
+                  >
+                    {formatTime(tzNow, config.showSeconds)}
+                  </span>
+                </div>
+              ) : (
+                <AnalogClockSVG
+                  size={Math.min(config.analogSize, 850)}
+                  hours={tzNow.getHours()}
+                  minutes={tzNow.getMinutes()}
+                  seconds={tzNow.getSeconds()}
+                  numberStyle={config.analogNumberStyle}
+                />
+              )}
+
+              {/* Date Display */}
+              <div
+                className="flex flex-col items-center gap-0.5 text-center"
+                style={{
+                  opacity: config.dateOpacity ?? 0.85,
+                }}
+              >
+                <p
+                  className={isLight ? 'sm:text-xs lg:text-sm' : 'text-white/70 sm:text-xs lg:text-sm'}
+                  style={{
+                    fontFamily: config.dateFontFamily,
+                    fontSize: `calc(0.7rem * ${config.dateFontSize})`,
+                    color: isLight ? 'var(--text-primary)' : (config.dateColor || '#ffffff'),
+                  }}
+                >
+                  {formatDate(tzNow, language)}
+                </p>
+                {config.showHijri && (
+                  <p
+                    className="font-amiri sm:text-xs lg:text-sm"
+                    style={{
+                      fontSize: `calc(0.7rem * ${config.dateFontSize})`,
+                      color: isLight ? 'var(--accent-gold)' : (config.dateColor || 'var(--accent-gold)'),
+                    }}
+                  >
+                    {formatHijriDate(tzNow, language)}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Vertical divider */}
+            <div className="layout-vertical-divider" />
+
+            {/* Right: Nabawi sidebar prayer cards */}
+            <div className="nabawi-sidebar flex w-[280px] shrink-0 flex-col justify-center gap-2 overflow-y-auto p-3 sm:w-[320px]">
+              {allPrayerStatuses.map(({ prayer, status, isNext }) => {
+                const isActive = status === 'now'
+                const isUpcomingNext = isNext && status === 'upcoming'
+                const isPassed = status === 'passed'
+                const isHighlighted = isActive || isUpcomingNext
+
+                return (
+                  <div
+                    key={prayer.id}
+                    className={`nabawi-prayer-card ${isHighlighted ? 'nabawi-prayer-card-active' : ''} ${isPassed ? 'nabawi-prayer-card-passed' : ''}`}
+                  >
+                    {/* Horizontal card: Arabic left, time right, Latin below */}
+                    <div className="flex items-center justify-between">
+                      <span className="font-amiri text-xl font-bold leading-tight" style={{ color: isLight ? 'var(--text-card)' : '#ffffff' }}>
+                        {prayer.arabic}
+                      </span>
+                      <span className="font-mono text-xl font-bold" style={{ color: isLight ? 'var(--text-card)' : '#ffffff' }}>
+                        {prayer.time}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-sm font-semibold" style={{ color: isLight ? 'var(--text-primary)' : 'rgba(255,255,255,0.7)' }}>
+                        {prayer.latin}
+                      </span>
+                      {isHighlighted && (
+                        <span className="flex items-center gap-1 text-xs" style={{ color: isLight ? 'var(--text-primary)' : 'rgba(255,255,255,0.5)' }}>
+                          <span>Iqomah</span>
+                          <span style={{ color: theme.accent }}>
+                            {calculateIqomah(prayer.time, config.iqomahMinutes)}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                    {isUpcomingNext && config.showCountdown && (
+                      <div className="mt-1 text-center">
+                        <span className={`font-mono text-sm font-bold tracking-wider ${isAlertMode ? 'blink-text' : ''}`} style={{ color: theme.accent }}>
+                          {formatCountdown(countdownSeconds)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ) : layout === 'makkah' ? (
+          /* ═══ MAKKAH LAYOUT: Top prayer bar + Center content below ═══ */
+          <div className="flex flex-1 flex-col overflow-hidden">
+            {/* Top prayer bar */}
+            <div className="makkah-top-bar z-20 shrink-0 border-b px-3 py-3 sm:px-4 sm:py-3.5" style={{ fontSize: `${config.prayerCardFontSize}rem` }}>
+              <div className="flex items-stretch justify-center gap-1.5 sm:gap-2 lg:gap-2.5">
+                {allPrayerStatuses.map(({ prayer, status, isNext }) => {
+                  const isActive = status === 'now'
+                  const isUpcomingNext = isNext && status === 'upcoming'
+                  const isPassed = status === 'passed'
+                  const isHighlighted = isActive || isUpcomingNext
+
+                  return (
+                    <div
+                      key={prayer.id}
+                      className={`makkah-prayer-card ${isHighlighted ? 'makkah-prayer-card-active' : ''} ${isPassed ? 'makkah-prayer-card-passed' : ''}`}
+                    >
+                      {/* Vertical card: Arabic top, Latin middle, time bottom */}
+                      <span className="font-amiri text-lg font-bold leading-tight sm:text-xl lg:text-2xl" style={{ color: isLight ? 'var(--text-card)' : '#ffffff' }}>
+                        {prayer.arabic}
+                      </span>
+                      <span className="text-xs font-semibold sm:text-sm lg:text-base" style={{ color: isLight ? 'var(--text-primary)' : 'rgba(255,255,255,0.8)' }}>
+                        {prayer.latin}
+                      </span>
+                      <span className="font-mono text-lg font-bold sm:text-xl lg:text-2xl" style={{ color: isLight ? 'var(--text-card)' : '#ffffff', textShadow: isHighlighted ? `0 0 15px color-mix(in srgb, ${theme.accent} 50%, transparent)` : undefined }}>
+                        {prayer.time}
+                      </span>
+                      {isHighlighted && (
+                        <span className="flex items-center gap-1 text-[10px] sm:text-xs" style={{ color: isLight ? 'var(--text-primary)' : 'rgba(255,255,255,0.5)' }}>
+                          <span>Iqomah</span>
+                          <span style={{ color: theme.accent }}>{calculateIqomah(prayer.time, config.iqomahMinutes)}</span>
+                        </span>
+                      )}
+                      {isUpcomingNext && config.showCountdown && (
+                        <span className={`mt-0.5 font-mono text-xs font-bold tracking-wider sm:text-sm ${isAlertMode ? 'blink-text' : ''}`} style={{ color: theme.accent }}>
+                          {formatCountdown(countdownSeconds)}
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Horizontal divider */}
+            <div className="layout-horizontal-divider" />
+
+            {/* Center: Mosque name + Clock + Date */}
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 overflow-hidden px-4 py-4 sm:gap-4 sm:px-8 sm:py-6 lg:gap-5 lg:px-10 lg:py-8">
+              {/* Mosque Name */}
+              <div className="text-center">
+                <h1
+                  className="font-amiri leading-tight sm:text-2xl lg:text-3xl"
+                  style={{
+                    color: 'var(--accent-gold)',
+                    fontSize: `calc(1.25rem * ${config.mosqueNameFontSize})`,
+                    fontFamily: "'Amiri', serif",
+                  }}
+                >
+                  {config.mosqueNameArabic}
+                </h1>
+                <p
+                  className={isLight ? 'mt-0.5 sm:text-sm lg:text-base' : 'mt-0.5 text-white/70 sm:text-sm lg:text-base'}
+                  style={{
+                    fontFamily: config.mosqueNameFontFamily,
+                    fontSize: `calc(0.75rem * ${config.mosqueNameFontSize})`,
+                    color: isLight ? 'var(--text-primary)' : undefined,
+                  }}
+                >
+                  {config.mosqueName}
+                </p>
+              </div>
+
+              {/* Clock */}
+              {config.clockType === 'digital' ? (
+                <div className="flex flex-col items-center">
+                  <span
+                    className={`clock-digital font-bold leading-none ${config.clockAnimation && config.clockAnimation !== 'none' ? `clock-animation-${config.clockAnimation}` : ''}`}
+                    style={{
+                      fontFamily: config.digitalFontFamily,
+                      fontSize: `clamp(2rem, ${config.digitalFontSize}vw, ${config.digitalFontSize}rem)`,
+                      color: 'var(--accent-gold)',
+                      ...(config.clockStyle === 'retro' ? {
+                        textShadow: isLight
+                          ? `0 0 8px color-mix(in srgb, var(--accent-gold) 30%, transparent)`
+                          : `0 0 10px var(--accent-gold), 0 0 30px var(--accent-gold)40, 0 0 60px var(--accent-gold)20`,
+                        letterSpacing: '0.05em',
+                      } : config.clockStyle === 'minimal' ? {
+                        fontWeight: 300,
+                        letterSpacing: '0.15em',
+                        opacity: 0.9,
+                      } : {}),
+                    }}
+                  >
+                    {formatTime(tzNow, config.showSeconds)}
+                  </span>
+                </div>
+              ) : (
+                <AnalogClockSVG
+                  size={Math.min(config.analogSize, 850)}
+                  hours={tzNow.getHours()}
+                  minutes={tzNow.getMinutes()}
+                  seconds={tzNow.getSeconds()}
+                  numberStyle={config.analogNumberStyle}
+                />
+              )}
+
+              {/* Date Display */}
+              <div
+                className="flex flex-col items-center gap-0.5 text-center"
+                style={{
+                  opacity: config.dateOpacity ?? 0.85,
+                }}
+              >
+                <p
+                  className={isLight ? 'sm:text-xs lg:text-sm' : 'text-white/70 sm:text-xs lg:text-sm'}
+                  style={{
+                    fontFamily: config.dateFontFamily,
+                    fontSize: `calc(0.7rem * ${config.dateFontSize})`,
+                    color: isLight ? 'var(--text-primary)' : (config.dateColor || '#ffffff'),
+                  }}
+                >
+                  {formatDate(tzNow, language)}
+                </p>
+                {config.showHijri && (
+                  <p
+                    className="font-amiri sm:text-xs lg:text-sm"
+                    style={{
+                      fontSize: `calc(0.7rem * ${config.dateFontSize})`,
+                      color: isLight ? 'var(--accent-gold)' : (config.dateColor || 'var(--accent-gold)'),
+                    }}
+                  >
+                    {formatHijriDate(tzNow, language)}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : layout === 'cordoba' ? (
+          /* ═══ CORDOBA LAYOUT: Split left (55%) + right (45%) ═══ */
+          <div className="flex flex-1 overflow-hidden">
+            {/* Left: Mosque name + Clock + Date */}
+            <div className="cordoba-split-left flex flex-[55] flex-col items-center justify-center gap-3 overflow-hidden px-4 py-4 sm:gap-4 sm:px-8 sm:py-6 lg:gap-5 lg:px-10 lg:py-8">
+              {/* Mosque Name */}
+              <div className="text-center">
+                <h1
+                  className="font-amiri leading-tight sm:text-2xl lg:text-3xl"
+                  style={{
+                    color: 'var(--accent-gold)',
+                    fontSize: `calc(1.25rem * ${config.mosqueNameFontSize})`,
+                    fontFamily: "'Amiri', serif",
+                  }}
+                >
+                  {config.mosqueNameArabic}
+                </h1>
+                <p
+                  className={isLight ? 'mt-0.5 sm:text-sm lg:text-base' : 'mt-0.5 text-white/70 sm:text-sm lg:text-base'}
+                  style={{
+                    fontFamily: config.mosqueNameFontFamily,
+                    fontSize: `calc(0.75rem * ${config.mosqueNameFontSize})`,
+                    color: isLight ? 'var(--text-primary)' : undefined,
+                  }}
+                >
+                  {config.mosqueName}
+                </p>
+              </div>
+
+              {/* Clock */}
+              {config.clockType === 'digital' ? (
+                <div className="flex flex-col items-center">
+                  <span
+                    className={`clock-digital font-bold leading-none ${config.clockAnimation && config.clockAnimation !== 'none' ? `clock-animation-${config.clockAnimation}` : ''}`}
+                    style={{
+                      fontFamily: config.digitalFontFamily,
+                      fontSize: `clamp(2rem, ${config.digitalFontSize}vw, ${config.digitalFontSize}rem)`,
+                      color: 'var(--accent-gold)',
+                      ...(config.clockStyle === 'retro' ? {
+                        textShadow: isLight
+                          ? `0 0 8px color-mix(in srgb, var(--accent-gold) 30%, transparent)`
+                          : `0 0 10px var(--accent-gold), 0 0 30px var(--accent-gold)40, 0 0 60px var(--accent-gold)20`,
+                        letterSpacing: '0.05em',
+                      } : config.clockStyle === 'minimal' ? {
+                        fontWeight: 300,
+                        letterSpacing: '0.15em',
+                        opacity: 0.9,
+                      } : {}),
+                    }}
+                  >
+                    {formatTime(tzNow, config.showSeconds)}
+                  </span>
+                </div>
+              ) : (
+                <AnalogClockSVG
+                  size={Math.min(config.analogSize, 850)}
+                  hours={tzNow.getHours()}
+                  minutes={tzNow.getMinutes()}
+                  seconds={tzNow.getSeconds()}
+                  numberStyle={config.analogNumberStyle}
+                />
+              )}
+
+              {/* Date Display */}
+              <div
+                className="flex flex-col items-center gap-0.5 text-center"
+                style={{
+                  opacity: config.dateOpacity ?? 0.85,
+                }}
+              >
+                <p
+                  className={isLight ? 'sm:text-xs lg:text-sm' : 'text-white/70 sm:text-xs lg:text-sm'}
+                  style={{
+                    fontFamily: config.dateFontFamily,
+                    fontSize: `calc(0.7rem * ${config.dateFontSize})`,
+                    color: isLight ? 'var(--text-primary)' : (config.dateColor || '#ffffff'),
+                  }}
+                >
+                  {formatDate(tzNow, language)}
+                </p>
+                {config.showHijri && (
+                  <p
+                    className="font-amiri sm:text-xs lg:text-sm"
+                    style={{
+                      fontSize: `calc(0.7rem * ${config.dateFontSize})`,
+                      color: isLight ? 'var(--accent-gold)' : (config.dateColor || 'var(--accent-gold)'),
+                    }}
+                  >
+                    {formatHijriDate(tzNow, language)}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Vertical divider */}
+            <div className="layout-vertical-divider" />
+
+            {/* Right: Cordoba prayer cards in scrollable list */}
+            <div className="cordoba-split-right flex flex-[45] flex-col justify-center gap-2.5 overflow-y-auto p-4" style={{ fontSize: `${config.prayerCardFontSize}rem` }}>
+              {allPrayerStatuses.map(({ prayer, status, isNext }) => {
+                const isActive = status === 'now'
+                const isUpcomingNext = isNext && status === 'upcoming'
+                const isPassed = status === 'passed'
+                const isHighlighted = isActive || isUpcomingNext
+
+                return (
+                  <div
+                    key={prayer.id}
+                    className={`cordoba-prayer-card flex items-center justify-between ${isHighlighted ? 'cordoba-prayer-card-active' : ''} ${isPassed ? 'cordoba-prayer-card-passed' : ''}`}
+                  >
+                    {/* Left: Arabic + Latin */}
+                    <div className="flex min-w-0 flex-col">
+                      <span className="font-amiri text-lg font-bold leading-tight sm:text-xl" style={{ color: isLight ? 'var(--text-card)' : '#ffffff' }}>
+                        {prayer.arabic}
+                      </span>
+                      <span className="text-xs font-semibold sm:text-sm" style={{ color: isLight ? 'var(--text-primary)' : 'rgba(255,255,255,0.7)' }}>
+                        {prayer.latin}
+                      </span>
+                    </div>
+                    {/* Right: Time + Iqomah */}
+                    <div className="flex shrink-0 flex-col items-end">
+                      <span className="font-mono text-lg font-bold sm:text-xl" style={{ color: isLight ? 'var(--text-card)' : '#ffffff' }}>
+                        {prayer.time}
+                      </span>
+                      {isHighlighted && (
+                        <span className="text-xs" style={{ color: theme.accent }}>
+                          Iqomah {calculateIqomah(prayer.time, config.iqomahMinutes)}
+                        </span>
+                      )}
+                      {isUpcomingNext && config.showCountdown && (
+                        <span className={`mt-0.5 font-mono text-xs font-bold tracking-wider ${isAlertMode ? 'blink-text' : ''}`} style={{ color: theme.accent }}>
+                          {formatCountdown(countdownSeconds)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ) : (
+          /* ═══ DEFAULT LAYOUT: Mosque name + Clock + Date ═══ */
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 overflow-hidden px-4 py-4 sm:gap-4 sm:px-8 sm:py-6 lg:gap-5 lg:px-10 lg:py-8">
             {/* Mosque Name */}
             <div className="text-center">
               <h1
@@ -472,10 +1155,11 @@ export default function MosqueDisplay() {
                 {config.mosqueNameArabic}
               </h1>
               <p
-                className="mt-0.5 text-white/70 sm:text-sm lg:text-base"
+                className={isLight ? 'mt-0.5 sm:text-sm lg:text-base' : 'mt-0.5 text-white/70 sm:text-sm lg:text-base'}
                 style={{
                   fontFamily: config.mosqueNameFontFamily,
                   fontSize: `calc(0.75rem * ${config.mosqueNameFontSize})`,
+                  color: isLight ? 'var(--text-primary)' : undefined,
                 }}
               >
                 {config.mosqueName}
@@ -486,13 +1170,15 @@ export default function MosqueDisplay() {
             {config.clockType === 'digital' ? (
               <div className="flex flex-col items-center">
                 <span
-                  className="clock-digital font-bold leading-none"
+                  className={`clock-digital font-bold leading-none ${config.clockAnimation && config.clockAnimation !== 'none' ? `clock-animation-${config.clockAnimation}` : ''}`}
                   style={{
                     fontFamily: config.digitalFontFamily,
-                    fontSize: `clamp(2.5rem, ${config.digitalFontSize}vw, ${config.digitalFontSize}rem)`,
+                    fontSize: `clamp(2rem, ${config.digitalFontSize}vw, ${config.digitalFontSize}rem)`,
                     color: 'var(--accent-gold)',
                     ...(config.clockStyle === 'retro' ? {
-                      textShadow: `0 0 10px var(--accent-gold), 0 0 30px var(--accent-gold)40, 0 0 60px var(--accent-gold)20`,
+                      textShadow: isLight
+                        ? `0 0 8px color-mix(in srgb, var(--accent-gold) 30%, transparent)`
+                        : `0 0 10px var(--accent-gold), 0 0 30px var(--accent-gold)40, 0 0 60px var(--accent-gold)20`,
                       letterSpacing: '0.05em',
                     } : config.clockStyle === 'minimal' ? {
                       fontWeight: 300,
@@ -501,15 +1187,15 @@ export default function MosqueDisplay() {
                     } : {}),
                   }}
                 >
-                  {formatTime(now, config.showSeconds)}
+                  {formatTime(tzNow, config.showSeconds)}
                 </span>
               </div>
             ) : (
               <AnalogClockSVG
                 size={Math.min(config.analogSize, 850)}
-                hours={now.getHours()}
-                minutes={now.getMinutes()}
-                seconds={now.getSeconds()}
+                hours={tzNow.getHours()}
+                minutes={tzNow.getMinutes()}
+                seconds={tzNow.getSeconds()}
                 numberStyle={config.analogNumberStyle}
               />
             )}
@@ -522,32 +1208,41 @@ export default function MosqueDisplay() {
               }}
             >
               <p
-                className="text-white/70 sm:text-xs lg:text-sm"
+                className={isLight ? 'sm:text-xs lg:text-sm' : 'text-white/70 sm:text-xs lg:text-sm'}
                 style={{
                   fontFamily: config.dateFontFamily,
                   fontSize: `calc(0.7rem * ${config.dateFontSize})`,
-                  color: config.dateColor || '#ffffff',
+                  color: isLight ? 'var(--text-primary)' : (config.dateColor || '#ffffff'),
                 }}
               >
-                {formatDate(now, language)}
+                {formatDate(tzNow, language)}
               </p>
               {config.showHijri && (
                 <p
                   className="font-amiri sm:text-xs lg:text-sm"
                   style={{
                     fontSize: `calc(0.7rem * ${config.dateFontSize})`,
-                    color: config.dateColor || 'var(--accent-gold)',
+                    color: isLight ? 'var(--accent-gold)' : (config.dateColor || 'var(--accent-gold)'),
                   }}
                 >
-                  {formatHijriDate(now, language)}
+                  {formatHijriDate(tzNow, language)}
                 </p>
               )}
             </div>
-
           </div>
+        )}
 
-        {/* ======== BOTTOM PRAYER SCHEDULE BAR ======== */}
-        <div className="z-20 shrink-0 border-t border-white/10 bg-black/30 px-2 py-2 sm:px-4 sm:py-3">
+        {/* ======== BOTTOM PRAYER SCHEDULE BAR (default layout only) ======== */}
+        {layout === 'default' && (
+        <div
+          className={`z-20 shrink-0 border-t px-3 py-3.5 sm:px-4 sm:py-4 min-h-[75px] sm:min-h-[90px] lg:min-h-[100px] ${isLight ? 'tv-prayer-bar-light' : 'border-white/10 bg-black/30'}`}
+          style={{
+            fontSize: `${config.prayerCardFontSize}rem`,
+            ...(config.theme === 'custom' && config.customBackgroundImage
+              ? { backgroundColor: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(8px)' }
+              : {}),
+          }}
+        >
           <div className="flex items-stretch gap-1.5 sm:gap-2 lg:gap-2.5">
             {allPrayerStatuses.map(({ prayer, status, isNext }) => {
               const isActive = status === 'now'
@@ -558,100 +1253,120 @@ export default function MosqueDisplay() {
               return (
                 <div
                   key={prayer.id}
-                  className={`flex flex-col items-center justify-center rounded-lg border transition-all duration-300 ${
+                  className={`relative flex items-center justify-between rounded-xl border transition-all duration-300 overflow-hidden ${isLight ? (isHighlighted ? 'tv-prayer-card-light-highlight' : 'tv-prayer-card-light') : ''} ${
                     isHighlighted
                       ? 'flex-[2] sm:flex-[1.8]'
                       : 'flex-1'
                   } ${
-                    isActive
-                      ? 'border-red-500/60 bg-red-500/15'
-                      : isUpcomingNext
-                        ? 'border-white/20 bg-white/5'
-                        : ''
-                  } ${
                     isHighlighted
-                      ? 'px-3 py-2.5 sm:px-5 sm:py-3.5'
-                      : 'px-1.5 py-1.5 sm:px-3 sm:py-2'
+                      ? 'px-5 py-4 sm:px-7 sm:py-5'
+                      : 'px-4 py-3 sm:px-5 sm:py-4'
                   }`}
                   style={
-                    !isActive && !isUpcomingNext
-                      ? {
-                          backgroundColor: config.cardBgColor,
-                          borderColor: config.cardBorderColor,
-                          opacity: isPassed ? 0.5 : 1,
-                        }
-                      : {
-                          opacity: isPassed ? 0.5 : 1,
-                          boxShadow: isUpcomingNext ? `0 0 16px ${theme.accent}25, inset 0 0 20px ${theme.accent}08` : undefined,
-                        }
+                    isLight
+                      ? { opacity: isPassed ? 0.4 : 1 }
+                      : !isActive && !isUpcomingNext
+                        ? {
+                            backgroundColor: (config.theme === 'custom' && config.customBackgroundImage)
+                              ? 'rgba(0, 0, 0, 0.75)'
+                              : config.cardBgColor,
+                            borderColor: (config.theme === 'custom' && config.customBackgroundImage)
+                              ? 'rgba(255, 255, 255, 0.2)'
+                              : config.cardBorderColor,
+                            opacity: isPassed ? 0.45 : 1,
+                            ...(config.theme === 'custom' && config.customBackgroundImage
+                              ? { backdropFilter: 'blur(8px)' }
+                              : {}),
+                          }
+                        : {
+                            opacity: isPassed ? 0.45 : 1,
+                            backgroundColor: isHighlighted
+                              ? `color-mix(in srgb, ${theme.accent} 12%, transparent)`
+                              : undefined,
+                            borderColor: isHighlighted
+                              ? `color-mix(in srgb, ${theme.accent} 35%, transparent)`
+                              : config.cardBorderColor,
+                            boxShadow: isHighlighted
+                              ? `0 0 20px color-mix(in srgb, ${theme.accent} 25%, transparent), 0 0 40px color-mix(in srgb, ${theme.accent} 10%, transparent), inset 0 0 25px color-mix(in srgb, ${theme.accent} 8%, transparent)`
+                              : undefined,
+                            ...(config.theme === 'custom' && config.customBackgroundImage
+                              ? { backdropFilter: 'blur(8px)' }
+                              : {}),
+                          }
                   }
                 >
-                  {/* Arabic name */}
-                  <span
-                    className={`font-amiri leading-tight ${
-                      isHighlighted
-                        ? 'text-sm font-bold sm:text-base lg:text-lg'
-                        : 'text-[10px] sm:text-xs'
-                    }`}
-                    style={{
-                      color: isActive ? '#ef4444' : theme.accent,
-                      opacity: isPassed ? 0.5 : 1,
-                    }}
-                  >
-                    {prayer.arabic}
-                  </span>
-                  {/* Latin name */}
-                  <span
-                    className={`mt-0.5 font-medium text-white/50 ${
-                      isHighlighted ? 'text-[10px] sm:text-xs' : 'text-[8px] sm:text-[9px]'
-                    }`}
-                    style={{ opacity: isPassed ? 0.5 : 1 }}
-                  >
-                    {prayer.latin}
-                  </span>
-                  {/* Time */}
-                  <span
-                    className={`mt-0.5 font-mono font-bold ${
-                      isHighlighted ? 'text-sm sm:text-base lg:text-lg' : 'text-[10px] sm:text-[11px]'
-                    }`}
-                    style={{
-                      color: isActive ? '#ef4444' : '#ffffff',
-                      opacity: isPassed ? 0.5 : 1,
-                    }}
-                  >
-                    {prayer.time}
-                  </span>
-                  {/* Iqomah - only for highlighted card */}
-                  {isHighlighted && (
-                    <span className="mt-1 flex items-center gap-1 text-[9px] text-white/40 sm:text-[10px]">
-                      <span>Iqomah</span>
-                      <span style={{ color: theme.accent }}>
-                        {calculateIqomah(prayer.time, config.iqomahMinutes)}
-                      </span>
-                    </span>
-                  )}
-                  {/* Countdown - only for next upcoming prayer */}
-                  {isUpcomingNext && config.showCountdown && (
+                  {/* Left: Names (Arabic + Latin) */}
+                  <div className="flex flex-col justify-center min-w-0 flex-1">
                     <span
-                      className={`mt-0.5 font-mono text-xs font-bold tracking-wider sm:text-sm lg:text-base ${isAlertMode ? 'blink-text' : ''}`}
+                      className={`font-amiri leading-tight font-bold ${
+                        isHighlighted
+                          ? 'text-xl sm:text-2xl lg:text-3xl'
+                          : 'text-lg sm:text-xl lg:text-2xl'
+                      }`}
                       style={{
-                        color: isAlertMode ? '#ef4444' : '#ffffff',
+                        color: isLight ? 'var(--text-card)' : '#ffffff',
+                        opacity: isPassed ? 0.45 : 1,
                       }}
                     >
-                      {formatCountdown(countdownSeconds)}
+                      {prayer.arabic}
                     </span>
-                  )}
+                    <span
+                      className={`font-semibold ${
+                        isHighlighted ? 'text-sm sm:text-base lg:text-xl' : 'text-xs sm:text-sm lg:text-base'
+                      } ${isLight ? '' : 'text-white/80'}`}
+                      style={{ opacity: isPassed ? 0.45 : (isLight ? 0.7 : 0.85), color: isLight ? 'var(--text-primary)' : undefined }}
+                    >
+                      {prayer.latin}
+                    </span>
+                    {/* Iqomah - only for highlighted card */}
+                    {isHighlighted && (
+                      <span className={`mt-1 flex items-center gap-1 text-[11px] sm:text-xs lg:text-sm ${isLight ? '' : 'text-white/40'}`} style={{ color: isLight ? 'var(--text-primary)' : undefined }}>
+                        <span>Iqomah</span>
+                        <span style={{ color: theme.accent }}>
+                          {calculateIqomah(prayer.time, config.iqomahMinutes)}
+                        </span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Right: Time */}
+                  <div className="flex flex-col items-end justify-center shrink-0 ml-2">
+                    <span
+                      className={`font-mono font-bold ${
+                        isHighlighted ? 'text-xl sm:text-2xl lg:text-3xl' : 'text-lg sm:text-xl lg:text-2xl'
+                      }`}
+                      style={{
+                        color: isLight ? 'var(--text-card)' : '#ffffff',
+                        opacity: isPassed ? 0.45 : 1,
+                        textShadow: isHighlighted ? `0 0 15px color-mix(in srgb, ${theme.accent} 50%, transparent)` : undefined,
+                      }}
+                    >
+                      {prayer.time}
+                    </span>
+                    {/* Countdown - only for next upcoming prayer */}
+                    {isUpcomingNext && config.showCountdown && (
+                      <span
+                        className={`mt-1 font-mono text-sm font-bold tracking-wider sm:text-base lg:text-xl ${isAlertMode ? 'blink-text' : ''}`}
+                        style={{
+                          color: theme.accent,
+                        }}
+                      >
+                        {formatCountdown(countdownSeconds)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )
             })}
           </div>
         </div>
+        )}
       </main>
 
       {/* ======== RUNNING TEXT BAR ======== */}
       {config.showAnnouncement && config.announcement && (
-        <footer className="relative z-50 h-9 shrink-0 border-t border-white/5 sm:h-10">
-          <div className="running-text-container absolute inset-0 flex items-center px-4" style={{ backgroundColor: 'color-mix(in srgb, var(--accent-gold) 8%, #050505)' }}>
+        <footer className={`relative z-50 min-h-[36px] shrink-0 border-t sm:min-h-[40px] ${isLight ? 'tv-footer-light' : 'border-white/5'}`}>
+          <div className={`running-text-container absolute inset-0 flex items-center px-4 ${isLight ? 'tv-footer-light' : ''}`} style={{ backgroundColor: isLight ? 'color-mix(in srgb, var(--accent-gold) 8%, #F5F5F0)' : 'color-mix(in srgb, var(--accent-gold) 8%, #050505)' }}>
             <div
               className={`inline-block whitespace-nowrap text-xs font-medium sm:text-sm ${
                 config.runningAnimation === 'scroll-left'
@@ -663,7 +1378,7 @@ export default function MosqueDisplay() {
                       : 'running-text-fade'
               }`}
               style={{
-                color: 'var(--accent-gold)',
+                color: isLight ? 'var(--text-primary)' : 'var(--accent-gold)',
                 animationDuration: `${config.runningSpeed}s`,
                 fontFamily: config.runningFontFamily || "'Inter', sans-serif",
                 fontSize: `${(config.runningFontSize || 1)}rem`,
@@ -677,12 +1392,12 @@ export default function MosqueDisplay() {
 
       {/* ======== ADHAN OVERLAY ======== */}
       {activeMode === 'adhan' && activePrayer && (
-        <div className="adhan-mode-active">
+        <div className={isLight ? 'adhan-mode-light' : 'adhan-mode-active'}>
           {/* Close preview button */}
           {previewMode === 'adhan' && (
             <button
               onClick={() => setPreviewMode('none')}
-              className="absolute top-4 right-4 z-50 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/70 transition-colors hover:bg-white/20 hover:text-white"
+              className={`absolute top-4 right-4 z-50 flex h-8 w-8 items-center justify-center rounded-full transition-colors ${isLight ? 'bg-black/5 text-black/40 hover:bg-black/10 hover:text-black/70' : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'}`}
             >
               <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 6L6 18M6 6l12 12" />
@@ -692,22 +1407,22 @@ export default function MosqueDisplay() {
           {/* Decorative top line */}
           <div className="absolute top-0 left-0 right-0 h-1" style={{ background: 'linear-gradient(90deg, transparent, var(--accent-gold), transparent)' }} />
 
-          {/* Title */}
-          <div className="adhan-text-latin font-cinzel">A D H A N</div>
+          {/* Subtitle: "Menantikan Adzan" */}
+          <div className={isLight ? 'adhan-light-text-latin font-cinzel' : 'adhan-text-latin font-cinzel'}>Menantikan Adzan</div>
 
-          {/* Prayer name Arabic */}
-          <div className="adhan-text-arabic font-amiri">{activePrayer.arabic}</div>
+          {/* Prayer name Arabic - BIGGER */}
+          <div className={isLight ? 'adhan-light-text-arabic font-amiri' : 'adhan-text-arabic font-amiri'}>{activePrayer.arabic}</div>
 
-          {/* Prayer name Latin */}
-          <div className="mt-2 text-lg font-semibold text-white/60">{activePrayer.latin}</div>
+          {/* Prayer name Latin - BIGGER */}
+          <div className={isLight ? 'adhan-light-text-latin-prayer' : 'adhan-text-latin-prayer'}>{activePrayer.latin}</div>
 
-          {/* Countdown */}
-          <div className="adhan-countdown font-mono" style={{ fontFamily: config.iqomahFontFamily }}>
+          {/* Countdown - SMALLER, with animation */}
+          <div className={`font-mono adhan-countdown-animation-${config.adhanCountdownAnimation} ${isLight ? 'adhan-light-countdown' : 'adhan-countdown'}`} style={{ fontFamily: config.iqomahFontFamily }}>
             {formatCountdown(adhanCountdown)}
           </div>
 
           {/* Label */}
-          <div className="mt-4 text-xs font-medium uppercase tracking-widest text-white/30">
+          <div className={`mt-4 text-xs font-medium uppercase tracking-widest ${isLight ? 'text-black/25' : 'text-white/30'}`}>
             {language === 'ar' ? 'متبقي لصلاة' : language === 'en' ? 'Time remaining for' : 'Menuju waktu'}
           </div>
         </div>
@@ -738,7 +1453,7 @@ export default function MosqueDisplay() {
 
           {/* Countdown */}
           <div
-            className="iqomah-countdown-display"
+            className={`iqomah-countdown-display iqomah-countdown-animation-${config.iqomahCountdownAnimation || 'pulse'}`}
             style={{ fontFamily: config.iqomahFontFamily, fontSize: `clamp(4rem, ${config.iqomahFontSize}vw, ${config.iqomahFontSize}rem)` }}
           >
             {formatCountdown(iqomahCountdown)}
@@ -755,6 +1470,26 @@ export default function MosqueDisplay() {
           )}
         </div>
       )}
+
+      {/* ======== POST-IQOMAH OVERLAY (Elegant Prayer Screen) ======== */}
+      {activeMode === 'post-iqomah' && activePrayer && (
+        <PostIqomahScreen
+          activePrayer={activePrayer}
+          mosqueName={config.mosqueName}
+          mosqueNameArabic={config.mosqueNameArabic}
+          now={tzNow}
+          language={language}
+          formatDate={formatDate}
+          formatHijriDate={formatHijriDate}
+          formatTime={formatTime}
+          showSeconds={config.showSeconds}
+          hadithCollection={(config.hadithCollection || []).filter((h) => h.active)}
+          previewMode={previewMode}
+          onClosePreview={() => setPreviewMode('none')}
+          digitalFontFamily={config.digitalFontFamily}
+          showHijri={config.showHijri}
+        />
+      )}
     </div>
   )
 }
@@ -762,6 +1497,171 @@ export default function MosqueDisplay() {
 // ============================================================
 // SUB-COMPONENTS
 // ============================================================
+
+/** Elegant Post-Iqomah Prayer Screen with Hadith rotation */
+function PostIqomahScreen({
+  activePrayer,
+  mosqueName,
+  mosqueNameArabic,
+  now,
+  language,
+  formatDate,
+  formatHijriDate,
+  formatTime,
+  showSeconds,
+  hadithCollection,
+  previewMode,
+  onClosePreview,
+  digitalFontFamily,
+  showHijri,
+}: {
+  activePrayer: PrayerTime
+  mosqueName: string
+  mosqueNameArabic: string
+  now: Date
+  language: Lang
+  formatDate: (d: Date, l: Lang) => string
+  formatHijriDate: (d: Date, l: Lang) => string
+  formatTime: (d: Date, s: boolean) => string
+  showSeconds: boolean
+  hadithCollection: Array<{ id: string; type: 'hadith' | 'ayat'; arabic: string; meaning: string; source: string }>
+  previewMode: string
+  onClosePreview: () => void
+  digitalFontFamily: string
+  showHijri: boolean
+}) {
+  const [hadithIndex, setHadithIndex] = useState(0)
+  const [fadeOpacity, setFadeOpacity] = useState(1)
+
+  // Rotate hadith every 12 seconds
+  useEffect(() => {
+    if (hadithCollection.length <= 1) return
+    const timer = setInterval(() => {
+      setFadeOpacity(0)
+      setTimeout(() => {
+        setHadithIndex((prev) => (prev + 1) % hadithCollection.length)
+        setFadeOpacity(1)
+      }, 400)
+    }, 12000)
+    return () => clearInterval(timer)
+  }, [hadithCollection.length])
+
+  const currentHadith = hadithCollection[hadithIndex] || null
+
+  // Format time with individual digits for blinking colon effect
+  const timeStr = formatTime(now, showSeconds)
+  const timeParts = timeStr.split(':')
+
+  return (
+    <div className="post-iqomah-mode-active">
+      {/* Close preview button */}
+      {previewMode === 'post-iqomah' && (
+        <button
+          onClick={onClosePreview}
+          className="absolute top-4 right-4 z-50 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/70 transition-colors hover:bg-white/20 hover:text-white"
+        >
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      )}
+
+      {/* Decorative top line */}
+      <div className="absolute top-0 left-0 right-0 h-1" style={{ background: 'linear-gradient(90deg, transparent, var(--accent-gold), transparent)' }} />
+
+      {/* Mosque Name at top */}
+      <div className="text-center">
+        <div className="post-iqomah-mosque-name-ar">{mosqueNameArabic}</div>
+        <div className="post-iqomah-mosque-name">{mosqueName}</div>
+      </div>
+
+      {/* Greeting */}
+      <div className="post-iqomah-greeting">
+        Selamat Menunaikan Ibadah Shalat
+      </div>
+
+      {/* Prayer Name Section */}
+      <div className="post-iqomah-prayer-section">
+        <div className="post-iqomah-calligraphy-ar">{activePrayer.arabic}</div>
+        <div className="post-iqomah-dots">
+          <span className="post-iqomah-dot" />
+          <span className="post-iqomah-dot" />
+          <span className="post-iqomah-dot" />
+        </div>
+        <div className="post-iqomah-prayer-latin">{activePrayer.latin}</div>
+      </div>
+
+      {/* Time Display */}
+      <div className="post-iqomah-time-section">
+        <span className="post-iqomah-time-label">
+          {language === 'ar' ? 'الوقت الآن' : language === 'en' ? 'Current Time' : 'Waktu Sekarang'}
+        </span>
+        <div className="post-iqomah-digital-time" style={{ fontFamily: digitalFontFamily }}>
+          {timeParts.map((part, i) => (
+            <span key={i}>
+              {part.split('').map((ch, j) => (
+                <span key={j}>{ch}</span>
+              ))}
+              {i < timeParts.length - 1 && (
+                <span className="post-iqomah-time-colon">:</span>
+              )}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Date Display */}
+      <div className="post-iqomah-date-section">
+        <div>
+          <p className="post-iqomah-date-masehi">{formatDate(now, language)}</p>
+        </div>
+        {showHijri && (
+          <>
+            <div className="post-iqomah-date-separator" />
+            <div>
+              <p className="post-iqomah-date-hijri">{formatHijriDate(now, language)}</p>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Hadith / Ayat Card */}
+      {currentHadith && (
+        <div className="post-iqomah-hadith-card">
+          <div className="post-iqomah-hadith-header">
+            <div className="post-iqomah-hadith-icon">
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+              </svg>
+            </div>
+            <span className="post-iqomah-hadith-title">
+              {currentHadith.type === 'ayat' ? 'Ayat Al-Quran' : 'Hadits Pilihan'}
+            </span>
+          </div>
+          <p
+            className="post-iqomah-hadith-arabic"
+            style={{ opacity: fadeOpacity }}
+          >
+            {currentHadith.arabic}
+          </p>
+          <p
+            className="post-iqomah-hadith-meaning"
+            style={{ opacity: fadeOpacity }}
+          >
+            {currentHadith.meaning}
+          </p>
+          <p
+            className="post-iqomah-hadith-source"
+            style={{ opacity: fadeOpacity }}
+          >
+            {currentHadith.source}
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
 
 /** Mosque dome + minaret SVG logo */
 function MosqueLogo({ size = 24 }: { size?: number }) {

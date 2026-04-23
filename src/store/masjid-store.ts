@@ -26,8 +26,8 @@ interface MasjidStore {
   setLastSynced: (v: string) => void
 
   // Preview mode (not persisted in config)
-  previewMode: 'none' | 'adhan' | 'iqomah'
-  setPreviewMode: (mode: 'none' | 'adhan' | 'iqomah') => void
+  previewMode: 'none' | 'adhan' | 'iqomah' | 'info' | 'post-iqomah'
+  setPreviewMode: (mode: 'none' | 'adhan' | 'iqomah' | 'info' | 'post-iqomah') => void
 }
 
 export const useMasjidStore = create<MasjidStore>((set) => ({
@@ -41,7 +41,8 @@ export const useMasjidStore = create<MasjidStore>((set) => ({
   setConfig: (partial) =>
     set((state) => ({ config: { ...state.config, ...partial } })),
   resetConfig: () => set({ config: DEFAULT_CONFIG }),
-  loadConfig: (config) => set({ config }),
+  loadConfig: (config) =>
+    set({ config: { ...DEFAULT_CONFIG, ...config } }),
 
   isLoading: false,
   setIsLoading: (v) => set({ isLoading: v }),

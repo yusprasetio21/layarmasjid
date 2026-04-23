@@ -152,6 +152,22 @@
   overflow: hidden;
   background: #050505;
   color: #ffffff;
+
+  /* Ensure proper rendering on all devices */
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Safe area support for TV/Android */
+@supports (padding: env(safe-area-inset-top)) {
+  .tv-screen {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
 }
 
 @media (min-width: 1024px) {
@@ -232,6 +248,467 @@
   background: radial-gradient(ellipse at 50% 0%, rgba(245, 215, 138, 0.06) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
+}
+
+.theme-custom {
+  --accent-gold: #C9A84C;
+  --accent-light: #E8D48B;
+  background: #050505;
+}
+.theme-custom::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(201, 168, 76, 0.06) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+/* Custom background image overlay */
+.theme-custom-bg-image {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================
+   MASJID DISPLAY - Light / Bright Elegant Themes
+   ============================================ */
+
+/* --- Istanbul Pearl: Warm ivory/cream with deep gold --- */
+.theme-istanbul-pearl {
+  --accent-gold: #8B6914;
+  --accent-light: #C9A84C;
+  --text-primary: #2C1810;
+  --text-muted: #6B5744;
+  --text-card: #3D2B1F;
+  --bg-header: rgba(255, 252, 245, 0.85);
+  --bg-footer: rgba(255, 252, 245, 0.85);
+  --bg-card: rgba(255, 250, 235, 0.7);
+  --border-subtle: rgba(139, 105, 20, 0.15);
+  --border-card: rgba(139, 105, 20, 0.25);
+  color: var(--text-primary);
+  background: linear-gradient(160deg, #FFFDF7 0%, #FDF6E8 25%, #F8ECD4 50%, #FDF6E8 75%, #FFFDF7 100%);
+}
+.theme-istanbul-pearl::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(201, 168, 76, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(139, 105, 20, 0.06) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* --- Safavid Marble: Clean white/grey with teal turquoise --- */
+.theme-safavid-marble {
+  --accent-gold: #0D7377;
+  --accent-light: #14B8A6;
+  --text-primary: #1A2332;
+  --text-muted: #4B6478;
+  --text-card: #243447;
+  --bg-header: rgba(248, 250, 252, 0.9);
+  --bg-footer: rgba(248, 250, 252, 0.9);
+  --bg-card: rgba(240, 246, 249, 0.8);
+  --border-subtle: rgba(13, 115, 119, 0.12);
+  --border-card: rgba(13, 115, 119, 0.2);
+  color: var(--text-primary);
+  background: linear-gradient(160deg, #FAFCFE 0%, #F0F5F8 30%, #E8EFF5 60%, #F0F5F8 85%, #FAFCFE 100%);
+}
+.theme-safavid-marble::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 0%, rgba(20, 184, 166, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 100%, rgba(13, 115, 119, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* --- Andalusian Garden: Warm earth tones with emerald green --- */
+.theme-andalusian-garden {
+  --accent-gold: #065F46;
+  --accent-light: #059669;
+  --text-primary: #1C1917;
+  --text-muted: #57534E;
+  --text-card: #292524;
+  --bg-header: rgba(250, 250, 249, 0.88);
+  --bg-footer: rgba(250, 250, 249, 0.88);
+  --bg-card: rgba(236, 253, 245, 0.7);
+  --border-subtle: rgba(6, 95, 70, 0.12);
+  --border-card: rgba(6, 95, 70, 0.22);
+  color: var(--text-primary);
+  background: linear-gradient(160deg, #FEFDFB 0%, #F5F0EB 25%, #EDE8E0 50%, #F5F0EB 75%, #FEFDFB 100%);
+}
+.theme-andalusian-garden::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 15% 20%, rgba(5, 150, 105, 0.06) 0%, transparent 40%),
+    radial-gradient(ellipse at 85% 80%, rgba(6, 95, 70, 0.05) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* --- Ottoman Rose: Soft blush/pink with rose gold --- */
+.theme-ottoman-rose {
+  --accent-gold: #9F1239;
+  --accent-light: #E11D48;
+  --text-primary: #3B1020;
+  --text-muted: #7A3048;
+  --text-card: #4C1428;
+  --bg-header: rgba(255, 248, 250, 0.88);
+  --bg-footer: rgba(255, 248, 250, 0.88);
+  --bg-card: rgba(255, 241, 242, 0.7);
+  --border-subtle: rgba(159, 18, 57, 0.12);
+  --border-card: rgba(159, 18, 57, 0.22);
+  color: var(--text-primary);
+  background: linear-gradient(160deg, #FFF8FA 0%, #FDF2F4 25%, #FCE7EB 50%, #FDF2F4 75%, #FFF8FA 100%);
+}
+.theme-ottoman-rose::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 25% 0%, rgba(225, 29, 72, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 100%, rgba(159, 18, 57, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* --- Al-Aqsa Gold: Warm sandstone/beige with bronze --- */
+.theme-al-aqsa-gold {
+  --accent-gold: #92400E;
+  --accent-light: #B45309;
+  --text-primary: #1C1108;
+  --text-muted: #78716C;
+  --text-card: #3D2E1F;
+  --bg-header: rgba(255, 251, 243, 0.88);
+  --bg-footer: rgba(255, 251, 243, 0.88);
+  --bg-card: rgba(255, 247, 237, 0.75);
+  --border-subtle: rgba(146, 64, 14, 0.12);
+  --border-card: rgba(146, 64, 14, 0.22);
+  color: var(--text-primary);
+  background: linear-gradient(160deg, #FFFBF3 0%, #FDF2E4 25%, #FAE8CE 50%, #FDF2E4 75%, #FFFBF3 100%);
+}
+.theme-al-aqsa-gold::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(180, 83, 9, 0.07) 0%, transparent 45%),
+    radial-gradient(ellipse at 80% 90%, rgba(146, 64, 14, 0.05) 0%, transparent 45%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================
+   MASJID DISPLAY - Layout Variant Themes
+   ============================================ */
+
+/* --- Nabawi: Deep emerald green with gold, right sidebar prayer cards --- */
+.theme-nabawi {
+  --accent-gold: #C9A84C;
+  --accent-light: #E8D48B;
+  background: linear-gradient(135deg, #041a12 0%, #0a2e1f 25%, #0d3a28 50%, #0a2e1f 75%, #041a12 100%);
+}
+.theme-nabawi::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 80% 30%, rgba(201, 168, 76, 0.06) 0%, transparent 45%),
+    radial-gradient(ellipse at 20% 70%, rgba(16, 185, 129, 0.04) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+/* Subtle Islamic geometric pattern overlay */
+.theme-nabawi::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(30deg, rgba(201,168,76,0.02) 12%, transparent 12.5%, transparent 87%, rgba(201,168,76,0.02) 87.5%),
+    linear-gradient(150deg, rgba(201,168,76,0.02) 12%, transparent 12.5%, transparent 87%, rgba(201,168,76,0.02) 87.5%),
+    linear-gradient(30deg, rgba(201,168,76,0.02) 12%, transparent 12.5%, transparent 87%, rgba(201,168,76,0.02) 87.5%),
+    linear-gradient(150deg, rgba(201,168,76,0.02) 12%, transparent 12.5%, transparent 87%, rgba(201,168,76,0.02) 87.5%);
+  background-size: 80px 140px;
+  background-position: 0 0, 0 0, 40px 70px, 40px 70px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Nabawi right sidebar prayer cards */
+.nabawi-sidebar {
+  background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(4,26,18,0.6) 100%);
+  border-left: 1px solid rgba(201, 168, 76, 0.15);
+  backdrop-filter: blur(12px);
+}
+
+.nabawi-prayer-card {
+  background: rgba(201, 168, 76, 0.06);
+  border: 1px solid rgba(201, 168, 76, 0.12);
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  transition: all 0.3s ease;
+}
+
+.nabawi-prayer-card:hover {
+  background: rgba(201, 168, 76, 0.1);
+  border-color: rgba(201, 168, 76, 0.25);
+}
+
+.nabawi-prayer-card-active {
+  background: rgba(201, 168, 76, 0.12) !important;
+  border-color: rgba(201, 168, 76, 0.35) !important;
+  box-shadow: 0 0 20px rgba(201, 168, 76, 0.1), inset 0 0 15px rgba(201, 168, 76, 0.05);
+}
+
+.nabawi-prayer-card-passed {
+  opacity: 0.3;
+}
+
+/* --- Makkah: Very dark with gold shimmer, top bar prayer cards --- */
+.theme-makkah {
+  --accent-gold: #E8C547;
+  --accent-light: #FFF2A8;
+  background: linear-gradient(180deg, #050505 0%, #0a0806 30%, #0d0a05 60%, #050505 100%);
+}
+.theme-makkah::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 10%, rgba(232, 197, 71, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 30% 80%, rgba(232, 197, 71, 0.03) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+/* Gold particle shimmer effect */
+.theme-makkah::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(232,197,71,0.15) 50%, transparent 100%),
+    radial-gradient(1px 1px at 40% 70%, rgba(232,197,71,0.1) 50%, transparent 100%),
+    radial-gradient(1px 1px at 60% 20%, rgba(232,197,71,0.12) 50%, transparent 100%),
+    radial-gradient(1px 1px at 80% 50%, rgba(232,197,71,0.08) 50%, transparent 100%),
+    radial-gradient(1px 1px at 10% 90%, rgba(232,197,71,0.1) 50%, transparent 100%),
+    radial-gradient(1px 1px at 90% 80%, rgba(232,197,71,0.12) 50%, transparent 100%),
+    radial-gradient(1px 1px at 50% 50%, rgba(232,197,71,0.08) 50%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Makkah top bar prayer cards */
+.makkah-top-bar {
+  background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(13,10,5,0.4) 100%);
+  border-bottom: 1px solid rgba(232, 197, 71, 0.12);
+  backdrop-filter: blur(10px);
+}
+
+.makkah-prayer-card {
+  background: rgba(232, 197, 71, 0.05);
+  border: 1px solid rgba(232, 197, 71, 0.1);
+  border-radius: 0.625rem;
+  padding: 0.5rem 0.625rem;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.makkah-prayer-card:hover {
+  background: rgba(232, 197, 71, 0.08);
+}
+
+.makkah-prayer-card-active {
+  background: rgba(232, 197, 71, 0.1) !important;
+  border-color: rgba(232, 197, 71, 0.3) !important;
+  box-shadow: 0 0 15px rgba(232, 197, 71, 0.08);
+}
+
+.makkah-prayer-card-passed {
+  opacity: 0.3;
+}
+
+/* --- Cordoba: Warm parchment with split layout --- */
+.theme-cordoba {
+  --accent-gold: #8B4513;
+  --accent-light: #CD853F;
+  --text-primary: #2C1810;
+  --text-muted: #6B5744;
+  --text-card: #3D2B1F;
+  --bg-header: rgba(245, 235, 220, 0.9);
+  --bg-footer: rgba(245, 235, 220, 0.85);
+  --bg-card: rgba(255, 248, 237, 0.75);
+  --border-subtle: rgba(139, 69, 19, 0.12);
+  --border-card: rgba(139, 69, 19, 0.2);
+  color: var(--text-primary);
+  background: linear-gradient(160deg, #F5ECD7 0%, #EDD9B8 30%, #E8D0A8 50%, #EDD9B8 70%, #F5ECD7 100%);
+}
+.theme-cordoba::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(205, 133, 63, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(139, 69, 19, 0.06) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+/* Subtle parchment texture */
+.theme-cordoba::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(139, 69, 19, 0.015) 2px,
+      rgba(139, 69, 19, 0.015) 4px
+    );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Cordoba light theme header/footer/bar overrides */
+.theme-cordoba .tv-header-light {
+  background: var(--bg-header);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.theme-cordoba .tv-prayer-bar-light {
+  background: var(--bg-card);
+  border-color: var(--border-subtle);
+  backdrop-filter: blur(12px);
+}
+
+.theme-cordoba .tv-prayer-card-light {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: var(--border-card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(8px);
+}
+
+.theme-cordoba .tv-prayer-card-light-highlight {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: color-mix(in srgb, var(--accent-gold) 35%, transparent);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--accent-gold) 12%, transparent), 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Cordoba split layout panels */
+.cordoba-split-left {
+  background: linear-gradient(135deg, rgba(255,248,237,0.5) 0%, rgba(237,217,184,0.3) 100%);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.cordoba-split-right {
+  background: linear-gradient(225deg, rgba(255,248,237,0.3) 0%, rgba(237,217,184,0.5) 100%);
+}
+
+.cordoba-prayer-card {
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(139, 69, 19, 0.15);
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(8px);
+  padding: 0.625rem 0.75rem;
+  transition: all 0.3s ease;
+}
+
+.cordoba-prayer-card:hover {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(139, 69, 19, 0.25);
+}
+
+.cordoba-prayer-card-active {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(139, 69, 19, 0.35) !important;
+  box-shadow: 0 0 20px rgba(139, 69, 19, 0.08), 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.cordoba-prayer-card-passed {
+  opacity: 0.3;
+}
+
+/* ============================================
+   MASJID DISPLAY - Layout Divider (Nabawi & Cordoba)
+   ============================================ */
+.layout-vertical-divider {
+  width: 1px;
+  background: linear-gradient(180deg, transparent 0%, var(--accent-gold) 30%, var(--accent-gold) 70%, transparent 100%);
+  opacity: 0.15;
+}
+
+.layout-horizontal-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--accent-gold) 30%, var(--accent-gold) 70%, transparent 100%);
+  opacity: 0.15;
+}
+
+/* Light theme overrides for header, footer, and prayer bar */
+.theme-istanbul-pearl .tv-header-light,
+.theme-safavid-marble .tv-header-light,
+.theme-andalusian-garden .tv-header-light,
+.theme-ottoman-rose .tv-header-light,
+.theme-al-aqsa-gold .tv-header-light {
+  background: var(--bg-header);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.theme-istanbul-pearl .tv-footer-light,
+.theme-safavid-marble .tv-footer-light,
+.theme-andalusian-garden .tv-footer-light,
+.theme-ottoman-rose .tv-footer-light,
+.theme-al-aqsa-gold .tv-footer-light {
+  background: var(--bg-footer);
+  border-color: var(--border-subtle);
+}
+
+/* Light theme prayer bar background */
+.theme-istanbul-pearl .tv-prayer-bar-light,
+.theme-safavid-marble .tv-prayer-bar-light,
+.theme-andalusian-garden .tv-prayer-bar-light,
+.theme-ottoman-rose .tv-prayer-bar-light,
+.theme-al-aqsa-gold .tv-prayer-bar-light {
+  background: var(--bg-card);
+  border-color: var(--border-subtle);
+  backdrop-filter: blur(12px);
+}
+
+/* Light theme prayer card styling */
+.theme-istanbul-pearl .tv-prayer-card-light,
+.theme-safavid-marble .tv-prayer-card-light,
+.theme-andalusian-garden .tv-prayer-card-light,
+.theme-ottoman-rose .tv-prayer-card-light,
+.theme-al-aqsa-gold .tv-prayer-card-light {
+  background: rgba(255, 255, 255, 0.75);
+  border-color: var(--border-card);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(8px);
+}
+
+.theme-istanbul-pearl .tv-prayer-card-light-highlight,
+.theme-safavid-marble .tv-prayer-card-light-highlight,
+.theme-andalusian-garden .tv-prayer-card-light-highlight,
+.theme-ottoman-rose .tv-prayer-card-light-highlight,
+.theme-al-aqsa-gold .tv-prayer-card-light-highlight {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: color-mix(in srgb, var(--accent-gold) 40%, transparent);
+  box-shadow:
+    0 0 20px color-mix(in srgb, var(--accent-gold) 18%, transparent),
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    inset 0 0 20px color-mix(in srgb, var(--accent-gold) 8%, transparent);
 }
 
 /* ============================================
@@ -386,34 +863,129 @@
   to { opacity: 1; transform: scale(1); }
 }
 
+/* "Menantikan Adzan" - smaller subtitle */
 .adhan-text-latin {
+  font-size: 1.8rem;
+  font-weight: 600;
+  letter-spacing: 0.4em;
+  color: var(--accent-gold);
+  text-shadow: 0 0 20px color-mix(in srgb, var(--accent-gold) 50%, transparent);
+  text-indent: 0.4em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+/* Arabic prayer name - BIGGER than clock */
+.adhan-text-arabic {
+  font-size: 5rem;
+  color: #ffffff;
+  margin-top: 1rem;
+  text-shadow: 0 0 30px rgba(255, 255, 255, 0.4), 0 0 60px color-mix(in srgb, var(--accent-gold) 30%, transparent);
+  line-height: 1.3;
+}
+
+/* Latin prayer name - BIGGER than clock */
+.adhan-text-latin-prayer {
+  font-size: 2.5rem;
+  color: var(--accent-gold);
+  margin-top: 0.5rem;
+  font-weight: 700;
+  text-shadow: 0 0 20px color-mix(in srgb, var(--accent-gold) 40%, transparent);
+}
+
+/* Countdown - SMALLER than prayer names */
+.adhan-countdown {
   font-size: 4rem;
   font-weight: 700;
-  letter-spacing: 1.5em;
-  color: var(--accent-gold);
-  text-shadow: 0 0 40px var(--accent-gold), 0 0 80px color-mix(in srgb, var(--accent-gold) 40%, transparent);
-  text-indent: 1.5em;
-}
-
-.adhan-text-arabic {
-  font-size: 2.5rem;
-  color: #ffffff;
-  margin-top: 1.5rem;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-}
-
-.adhan-countdown {
-  font-size: 6rem;
-  font-weight: 700;
   color: #ef4444;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
   text-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Adhan countdown animation variants */
+.adhan-countdown-animation-pulse {
   animation: adhanPulse 1s ease-in-out infinite;
+}
+.adhan-countdown-animation-glow {
+  animation: adhanGlow 2s ease-in-out infinite;
+}
+.adhan-countdown-animation-blink {
+  animation: adhanBlink 1s step-end infinite;
+}
+.adhan-countdown-animation-scale {
+  animation: adhanScale 2s ease-in-out infinite;
+}
+.adhan-countdown-animation-none {
+  animation: none;
 }
 
 @keyframes adhanPulse {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.05); opacity: 0.8; }
+}
+@keyframes adhanGlow {
+  0%, 100% { text-shadow: 0 0 20px rgba(239, 68, 68, 0.4); filter: brightness(1); }
+  50% { text-shadow: 0 0 50px rgba(239, 68, 68, 0.8), 0 0 100px rgba(239, 68, 68, 0.3); filter: brightness(1.2); }
+}
+@keyframes adhanBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+@keyframes adhanScale {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* ============================================
+   MASJID DISPLAY - Adhan Mode (Light Theme)
+   ============================================ */
+.adhan-mode-light {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-gold) 8%, #FAFAF5) 0%, color-mix(in srgb, var(--accent-gold) 4%, #F5F0E8) 50%, color-mix(in srgb, var(--accent-gold) 8%, #FAFAF5) 100%);
+  animation: adhanFadeIn 1s ease-out;
+}
+
+.adhan-light-text-latin {
+  font-size: 1.8rem;
+  font-weight: 600;
+  letter-spacing: 0.4em;
+  color: var(--accent-gold);
+  text-shadow: none;
+  text-indent: 0.4em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.adhan-light-text-arabic {
+  font-size: 5rem;
+  color: var(--text-primary);
+  margin-top: 1rem;
+  text-shadow: none;
+  line-height: 1.3;
+}
+
+.adhan-light-text-latin-prayer {
+  font-size: 2.5rem;
+  color: var(--accent-gold);
+  margin-top: 0.5rem;
+  font-weight: 700;
+  text-shadow: none;
+}
+
+.adhan-light-countdown {
+  font-size: 4rem;
+  font-weight: 700;
+  color: #dc2626;
+  margin-top: 1.5rem;
+  text-shadow: 0 0 15px rgba(220, 38, 38, 0.2);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ============================================
@@ -447,6 +1019,7 @@
   opacity: 0.8;
 }
 
+/* Iqomah countdown - default pulse */
 .iqomah-countdown-display {
   font-size: 8rem;
   font-weight: 900;
@@ -457,9 +1030,486 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Iqomah countdown - pulse */
+.iqomah-countdown-animation-pulse {
+  animation: iqomahPulse 1s ease-in-out infinite !important;
+}
+
+/* Iqomah countdown - LED Jadul (retro digital) */
+.iqomah-countdown-animation-led-jadul {
+  font-family: 'Orbitron', monospace !important;
+  color: #ff6b2b !important;
+  text-shadow:
+    0 0 10px rgba(255, 107, 43, 0.8),
+    0 0 30px rgba(255, 107, 43, 0.5),
+    0 0 60px rgba(255, 107, 43, 0.3),
+    0 0 100px rgba(255, 60, 0, 0.15),
+    inset 0 0 20px rgba(255, 107, 43, 0.1) !important;
+  letter-spacing: 0.08em !important;
+  background: linear-gradient(180deg, rgba(255,60,0,0.08) 0%, rgba(0,0,0,0.3) 50%, rgba(255,60,0,0.05) 100%);
+  border-radius: 1rem;
+  padding: 0.5rem 1.5rem !important;
+  border: 2px solid rgba(255, 107, 43, 0.3);
+  animation: ledJadulGlow 2s ease-in-out infinite !important;
+  box-shadow:
+    0 0 20px rgba(255, 107, 43, 0.3),
+    inset 0 0 30px rgba(255, 60, 0, 0.05);
+}
+
+@keyframes ledJadulGlow {
+  0%, 100% {
+    text-shadow:
+      0 0 10px rgba(255, 107, 43, 0.8),
+      0 0 30px rgba(255, 107, 43, 0.5),
+      0 0 60px rgba(255, 107, 43, 0.3);
+    box-shadow:
+      0 0 20px rgba(255, 107, 43, 0.3),
+      inset 0 0 30px rgba(255, 60, 0, 0.05);
+    border-color: rgba(255, 107, 43, 0.3);
+  }
+  50% {
+    text-shadow:
+      0 0 15px rgba(255, 107, 43, 1),
+      0 0 40px rgba(255, 107, 43, 0.7),
+      0 0 80px rgba(255, 107, 43, 0.4),
+      0 0 120px rgba(255, 60, 0, 0.2);
+    box-shadow:
+      0 0 30px rgba(255, 107, 43, 0.5),
+      inset 0 0 40px rgba(255, 60, 0, 0.08);
+    border-color: rgba(255, 107, 43, 0.5);
+  }
+}
+
+/* Iqomah countdown - glow */
+.iqomah-countdown-animation-glow {
+  animation: iqomahGlow 2s ease-in-out infinite !important;
+}
+
+/* Iqomah countdown - blink */
+.iqomah-countdown-animation-blink {
+  animation: iqomahBlink 1s step-end infinite !important;
+}
+
+/* Iqomah countdown - scale */
+.iqomah-countdown-animation-scale {
+  animation: iqomahScale 2s ease-in-out infinite !important;
+}
+
+/* Iqomah countdown - none */
+.iqomah-countdown-animation-none {
+  animation: none !important;
+}
+
 @keyframes iqomahPulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.08); }
+}
+
+@keyframes iqomahGlow {
+  0%, 100% { text-shadow: 0 0 30px rgba(239, 68, 68, 0.4); filter: brightness(1); }
+  50% { text-shadow: 0 0 60px rgba(239, 68, 68, 0.8), 0 0 120px rgba(239, 68, 68, 0.3); filter: brightness(1.3); }
+}
+
+@keyframes iqomahBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+@keyframes iqomahScale {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+/* ============================================
+   MASJID DISPLAY - Post-Iqomah Mode (Elegant Prayer Screen)
+   ============================================ */
+.post-iqomah-mode-active {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1rem, 2.5vh, 1.8rem);
+  background: linear-gradient(180deg, #000000 0%, #050505 40%, #0a0505 100%);
+  animation: adhanFadeIn 0.6s ease-out;
+  padding: clamp(1rem, 3vh, 2.5rem);
+  overflow: hidden;
+}
+
+/* Mosque name at top of post-iqomah */
+.post-iqomah-mosque-name {
+  font-size: clamp(0.85rem, 1.5vw, 1.1rem);
+  color: var(--accent-gold);
+  opacity: 0.65;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--accent-gold) 30%, transparent);
+  letter-spacing: 0.02em;
+}
+
+.post-iqomah-mosque-name-ar {
+  font-size: clamp(1.3rem, 2.5vw, 2rem);
+  color: var(--accent-gold);
+  text-shadow: 0 0 15px color-mix(in srgb, var(--accent-gold) 40%, transparent);
+  font-family: 'Aref Ruqaa', 'Amiri', serif;
+  line-height: 1.3;
+}
+
+/* Greeting header */
+.post-iqomah-greeting {
+  font-size: clamp(0.9rem, 1.8vw, 1.3rem);
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  text-align: center;
+  animation: postIqomahFadeDown 0.8s ease-out;
+}
+
+/* Prayer name section */
+.post-iqomah-prayer-section {
+  text-align: center;
+  animation: postIqomahScaleIn 0.8s ease-out 0.15s both;
+}
+
+/* Arabic calligraphy with gold gradient */
+.post-iqomah-calligraphy-ar {
+  font-family: 'Aref Ruqaa', 'Amiri', serif;
+  font-size: clamp(3.5rem, 10vw, 7rem);
+  line-height: 1.1;
+  background: linear-gradient(
+    135deg,
+    var(--accent-gold-light, #f0d78c) 0%,
+    var(--accent-gold) 40%,
+    color-mix(in srgb, var(--accent-gold) 55%, #000) 80%,
+    var(--accent-gold) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 4px 25px color-mix(in srgb, var(--accent-gold) 20%, transparent));
+  animation: postIqomahGoldShimmer 4s ease-in-out infinite alternate;
+}
+
+/* Decorative dots */
+.post-iqomah-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.post-iqomah-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--accent-gold);
+  border-radius: 50%;
+  opacity: 0.6;
+}
+
+.post-iqomah-dot:nth-child(2) {
+  width: 8px;
+  height: 8px;
+  opacity: 1;
+}
+
+/* Prayer Latin name - BIGGER than greeting */
+.post-iqomah-prayer-latin {
+  font-size: clamp(2rem, 5.5vw, 4rem);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ffffff;
+  margin-top: 0.3rem;
+}
+
+/* Time section */
+.post-iqomah-time-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1rem, 2.5vw, 2rem);
+  animation: postIqomahFadeUp 0.8s ease-out 0.3s both;
+}
+
+.post-iqomah-time-label {
+  font-size: clamp(0.65rem, 1.1vw, 0.85rem);
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+}
+
+.post-iqomah-digital-time {
+  font-size: clamp(1.8rem, 4.5vw, 3.2rem);
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  color: var(--accent-gold);
+  display: flex;
+  align-items: center;
+  gap: 0.05em;
+}
+
+.post-iqomah-time-colon {
+  margin: 0 0.05em;
+  animation: postIqomahColonBlink 1s step-end infinite;
+  opacity: 0.7;
+}
+
+/* Date section */
+.post-iqomah-date-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  animation: postIqomahFadeUp 0.8s ease-out 0.45s both;
+}
+
+.post-iqomah-date-masehi {
+  font-size: clamp(0.8rem, 1.3vw, 1.05rem);
+  font-weight: 500;
+  color: #ffffff;
+  opacity: 0.85;
+  letter-spacing: 0.02em;
+}
+
+.post-iqomah-date-separator {
+  width: 4px;
+  height: 4px;
+  background: var(--accent-gold);
+  border-radius: 50%;
+  opacity: 0.5;
+}
+
+.post-iqomah-date-hijri {
+  font-size: clamp(0.75rem, 1.2vw, 0.95rem);
+  font-weight: 400;
+  color: #9ca3af;
+  letter-spacing: 0.03em;
+  font-family: 'Amiri', serif;
+}
+
+/* Hadith card */
+.post-iqomah-hadith-card {
+  background-color: color-mix(in srgb, var(--accent-gold) 6%, #111114);
+  border: 1px solid color-mix(in srgb, var(--accent-gold) 18%, transparent);
+  border-radius: 1.25rem;
+  padding: clamp(1rem, 2.2vw, 1.8rem) clamp(1.2rem, 2.8vw, 2.2rem);
+  position: relative;
+  overflow: hidden;
+  animation: postIqomahFadeUp 0.8s ease-out 0.6s both;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  max-width: 85vw;
+  width: 100%;
+  max-width: 800px;
+}
+
+.post-iqomah-hadith-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg,
+    transparent,
+    color-mix(in srgb, var(--accent-gold) 55%, #000),
+    var(--accent-gold),
+    color-mix(in srgb, var(--accent-gold) 55%, #000),
+    transparent
+  );
+}
+
+.post-iqomah-hadith-card::after {
+  content: '"';
+  position: absolute;
+  top: 8px;
+  left: 18px;
+  font-size: 3.5rem;
+  color: var(--accent-gold);
+  opacity: 0.07;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+
+.post-iqomah-hadith-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent-gold) 18%, transparent);
+}
+
+.post-iqomah-hadith-icon {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, var(--accent-gold), color-mix(in srgb, var(--accent-gold) 55%, #000));
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.75rem;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent-gold) 20%, transparent);
+  flex-shrink: 0;
+}
+
+.post-iqomah-hadith-title {
+  font-size: clamp(0.65rem, 1vw, 0.82rem);
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+}
+
+.post-iqomah-hadith-arabic {
+  font-family: 'Amiri Quran', 'Amiri', serif;
+  font-size: clamp(1.1rem, 2.2vw, 1.7rem);
+  line-height: 1.8;
+  text-align: right;
+  direction: rtl;
+  color: #ffffff;
+  margin-bottom: 0.7rem;
+  padding-right: 0.8rem;
+  transition: opacity 0.4s ease;
+}
+
+.post-iqomah-hadith-meaning {
+  font-size: clamp(0.78rem, 1.2vw, 0.95rem);
+  line-height: 1.6;
+  color: #9ca3af;
+  font-style: italic;
+  margin-bottom: 0.6rem;
+  padding-left: 0.4rem;
+  border-left: 3px solid color-mix(in srgb, var(--accent-gold) 55%, #000);
+  transition: opacity 0.4s ease;
+}
+
+.post-iqomah-hadith-source {
+  font-size: clamp(0.62rem, 0.95vw, 0.78rem);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: color-mix(in srgb, var(--accent-gold) 55%, #000);
+  transition: opacity 0.4s ease;
+}
+
+/* Clock inside a card for elegant look */
+.post-iqomah-clock-card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.2rem;
+  border: 1px solid color-mix(in srgb, var(--accent-gold) 22%, transparent);
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--accent-gold) 4%, rgba(255,255,255,0.02));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent-gold) 7%, transparent), inset 0 0 12px color-mix(in srgb, var(--accent-gold) 3%, transparent);
+}
+
+.post-iqomah-clock {
+  font-size: clamp(1.1rem, 2.2vw, 1.8rem);
+  font-weight: 700;
+  color: #ffffff;
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== Post-Iqomah Animations ===== */
+@keyframes postIqomahFadeDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes postIqomahScaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes postIqomahFadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes postIqomahGoldShimmer {
+  from {
+    filter: drop-shadow(0 4px 25px color-mix(in srgb, var(--accent-gold) 20%, transparent));
+    transform: scale(1);
+  }
+  to {
+    filter: drop-shadow(0 8px 40px color-mix(in srgb, var(--accent-gold) 35%, transparent));
+    transform: scale(1.008);
+  }
+}
+
+@keyframes postIqomahColonBlink {
+  0%, 49% { opacity: 0.7; }
+  50%, 100% { opacity: 0.2; }
+}
+
+/* ============================================
+   MASJID DISPLAY - Info Panel Full Screen
+   ============================================ */
+.info-panel-fullscreen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.info-panel-image-container {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.info-panel-image-container img {
+  width: var(--info-image-size, 85%);
+  max-height: 90%;
+  object-fit: contain;
+}
+
+/* Info text overlays on image */
+.info-overlay-top-left {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 10;
+  max-width: 50%;
+}
+
+.info-overlay-top-right {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
+  max-width: 50%;
+  text-align: right;
+}
+
+.info-overlay-inside-image {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  right: 1rem;
+  z-index: 10;
+  background: linear-gradient(transparent, rgba(0,0,0,0.8));
+  padding: 2rem 1rem 1rem;
+  text-align: center;
+}
+
+/* Info text outside image (top-left / top-right positions) */
+.info-text-outside-left {
+  text-align: left;
+}
+
+.info-text-outside-right {
+  text-align: right;
 }
 
 /* ============================================
@@ -544,4 +1594,43 @@
 @keyframes statusPulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
+}
+
+/* ============================================
+   MASJID DISPLAY - Clock Animations
+   ============================================ */
+.clock-animation-glow {
+  animation: clockGlow 2s ease-in-out infinite !important;
+}
+
+@keyframes clockGlow {
+  0%, 100% { text-shadow: 0 0 30px var(--accent-gold), 0 0 60px color-mix(in srgb, var(--accent-gold) 30%, transparent); filter: brightness(1); }
+  50% { text-shadow: 0 0 50px var(--accent-gold), 0 0 100px var(--accent-gold), 0 0 150px color-mix(in srgb, var(--accent-gold) 20%, transparent); filter: brightness(1.2); }
+}
+
+.clock-animation-pulse {
+  animation: clockPulse 1.5s ease-in-out infinite !important;
+}
+
+@keyframes clockPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+
+.clock-animation-retro-blink {
+  animation: clockRetroBlink 1s step-end infinite !important;
+}
+
+@keyframes clockRetroBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.6; }
+}
+
+.clock-animation-fade-breathe {
+  animation: clockBreathe 4s ease-in-out infinite !important;
+}
+
+@keyframes clockBreathe {
+  0%, 100% { opacity: 0.7; text-shadow: 0 0 10px var(--accent-gold); }
+  50% { opacity: 1; text-shadow: 0 0 40px var(--accent-gold), 0 0 80px color-mix(in srgb, var(--accent-gold) 30%, transparent); }
 }

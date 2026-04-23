@@ -1,74 +1,75 @@
+# Work Record: Layout Variants for MosqueDisplay.tsx
+
+## Task
+Add support for 3 new layout variant themes (nabawi, makkah, cordoba) with distinctly different visual layouts — not just color changes but different component positions.
+
+## Changes Made
+
+### 1. `src/types/masjid.ts`
+- Added `ThemeLayout` type: `'default' | 'nabawi' | 'makkah' | 'cordoba'`
+- Added `ThemeConfig` interface with optional `layout` field
+- Changed `THEMES` to `Record<string, ThemeConfig>` (from inline type)
+- Added 3 new theme entries:
+  - `nabawi`: Deep emerald green + gold, layout: 'nabawi' (right sidebar prayers)
+  - `makkah`: Dark gold shimmer, layout: 'makkah' (top bar prayers)
+  - `cordoba`: Warm parchment, layout: 'cordoba' (split horizontal)
+- Extended `theme` union type in `MasjidConfig` to include `'nabawi' | 'makkah' | 'cordoba'`
+
+### 2. `src/app/globals.css`
+- Added `.theme-nabawi` with emerald green gradient + geometric pattern overlay
+- Added `.nabawi-sidebar`, `.nabawi-prayer-card`, `.nabawi-prayer-card-active`, `.nabawi-prayer-card-passed`
+- Added `.theme-makkah` with dark gold shimmer + particle effects
+- Added `.makkah-top-bar`, `.makkah-prayer-card`, `.makkah-prayer-card-active`, `.makkah-prayer-card-passed`
+- Added `.theme-cordoba` with warm parchment + texture overlay (light theme)
+- Added `.cordoba-split-left`, `.cordoba-split-right`, `.cordoba-prayer-card`, `.cordoba-prayer-card-active`, `.cordoba-prayer-card-passed`
+- Added `.layout-vertical-divider`, `.layout-horizontal-divider` shared utilities
+
+### 3. `src/components/masjid/MosqueDisplay.tsx`
+- Added `const layout = theme.layout || 'default'` derived value
+- Modified `<main>` section with 4-way conditional layout rendering:
+  - **default**: Original centered clock + bottom prayer bar (unchanged)
+  - **nabawi**: Flex-row — left content + 320px right sidebar with vertical prayer cards
+  - **makkah**: Flex-col — top prayer bar + centered content below
+  - **cordoba**: Split — left 55% (clock area) + right 45% (2-column prayer grid)
+- Bottom prayer bar wrapped with `{layout === 'default' && (...)}`
+- Info panel, header, footer, overlays unchanged across all layouts
+
+### 4. `src/components/masjid/SettingsPanel.tsx`
+- Added 3 new entries to `THEME_OPTIONS` with `layout` and `description` fields
+- Added new "Tampilan Berbeda (Layout Variant)" section with:
+  - InfoBanner explaining these themes have different layouts
+  - Mini layout preview thumbnails showing the visual arrangement
+  - Description text for each layout variant
+
+## Verification
+- ✅ `bun run lint` passes (0 errors, 1 pre-existing warning)
+- ✅ Dev server compiles successfully
+- ✅ All existing themes and functionality preserved
 ---
 Task ID: 1
-Agent: Main Agent
-Task: Fix Superadmin 404 and "Supabase tidak dikonfigurasi" error
+Agent: main
+Task: Fix theme issues - duplicate nabawi, light theme colors, adhan adaptation, layout cleanup
 
 Work Log:
-- Identified that `/superadmin` route didn't exist (lost from previous session)
-- Identified that Supabase credentials were missing from `.env.local`
-- Decided to switch from Supabase to local Prisma/SQLite for reliability
-- Added `Screen` model to Prisma schema with id, password, config (JSON string), createdAt, updatedAt
-- Ran `bun run db:push` to sync schema to SQLite database
-- Rewrote `/api/screens` route to use Prisma instead of Supabase
-- Rewrote `/api/screens/[id]` route to use Prisma instead of Supabase
-- Rewrote `/api/screens/auth` route to use Prisma instead of Supabase
-- Created `/api/superadmin` route with POST (login), GET (list screens), PATCH (change password), DELETE (remove device)
-- Updated Zustand store to add `isSuperadmin` and `viewMode: 'superadmin'`
-- Created `SuperAdminPanel.tsx` component with login screen and dashboard
-- Updated `page.tsx` to handle `?mode=superadmin` URL parameter
-- Updated `useRealtimeSync.ts` to use polling only (no Supabase dependency)
-- Fixed lint error: missing `CardDescription` import in SuperAdminPanel
-- Verified all API endpoints work correctly:
-  - Device registration: ✅
-  - Auth with correct credentials: ✅
-  - Auth with wrong credentials: ✅ (returns error)
-  - Superadmin login: ✅
-  - List screens: ✅
+- Fixed duplicate theme entries in SettingsPanel.tsx: excluded layout variant themes (nabawi, makkah, cordoba) from dark/light theme filter sections using `!('layout' in t)` condition
+- Fixed all light theme text colors in MosqueDisplay.tsx: replaced 17 instances of `isLight ? 'var(--text-muted)'` with `isLight ? 'var(--text-primary)'` for better readability on bright backgrounds
+- Running text already had darker color for light themes (var(--text-primary))
+- Header mosque name and subtitle updated to use var(--text-primary) for light themes
+- Date displays across all layouts (header, nabawi, makkah, cordoba, default) updated
+- Prayer card Latin text and secondary text updated for light themes
+- Added light theme adhan overlay (adhan-mode-light) with cream/warm background and dark text, no glow effects
+- Iqomah overlay kept unchanged (always dark) as per user request
+- Added CSS classes: .adhan-mode-light, .adhan-light-text-latin, .adhan-light-text-arabic, .adhan-light-text-latin-prayer, .adhan-light-countdown
+- Improved light theme prayer card CSS: increased background opacity (0.65→0.75), stronger borders (35%→40%), more shadow
+- Added padding to nabawi-prayer-card (0.625rem 0.875rem), makkah-prayer-card (0.5rem 0.625rem), cordoba-prayer-card (0.625rem 0.75rem)
+- Made nabawi sidebar responsive: w-[280px] sm:w-[320px] with justify-center
+- Redesigned cordoba layout from 2-column grid to horizontal list cards (left: Arabic+Latin, right: Time+Iqomah) for cleaner appearance
+- Updated cordoba mini-preview in SettingsPanel from grid to horizontal bars
+- All changes compile cleanly with no lint errors
 
 Stage Summary:
-- Backend migrated from Supabase to Prisma/SQLite - no more "Supabase tidak dikonfigurasi" error
-- Superadmin panel accessible via `?mode=superadmin` URL parameter
-- Superadmin credentials: admin / sayaadmin123
-- Device 1234 created for testing with password test1234
-- All API routes verified working
----
-Task ID: 1
-Agent: Main Agent
-Task: Migrate API routes from Prisma/SQLite to Supabase
-
-Work Log:
-- Updated src/lib/supabase.ts with supabaseAdmin client (service role)
-- Rewrote /api/screens/route.ts (GET + POST) to use Supabase
-- Rewrote /api/screens/[id]/route.ts (GET + PATCH) to use Supabase
-- Rewrote /api/screens/auth/route.ts (POST) to use Supabase
-- Rewrote /api/superadmin/route.ts (GET + POST + PATCH + DELETE) to use Supabase
-- Removed all Prisma db imports from API routes
-- Added snake_case to camelCase transformation in superadmin GET
-
-Stage Summary:
-- All API routes now use Supabase instead of Prisma/SQLite
-- User needs to add owner_name and mosque_name columns to existing screens table
-- User needs to add DELETE policy to screens table
-- User needs to set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local
-
----
-Task ID: 2
-Agent: Main Agent
-Task: Fix all SettingsPanel issues - slider reset, toggle UI, custom theme, adhan/iqomah scope
-
-Work Log:
-- Identified root cause: setConfig in Zustand was causing re-renders that reset form state
-- Implemented local state pattern (formState) in SettingsDashboard
-- All form interactions now update local state only, synced to store on save
-- Created custom ToggleSwitch component with green/red visual + ON/OFF labels
-- Created InfoBanner component for informational messages
-- Added info banner in Adhan & Iqomah section explaining 5-waktu scope
-- Fixed custom theme color picker (works correctly with local state)
-- Added description text to all ToggleSwitch instances
-- Added unsaved changes indicator in header
-
-Stage Summary:
-- SettingsPanel rewritten (1394 lines) with all fixes applied
-- Zero lint errors confirmed
-- Dev server compiled successfully
-- Key fixes: local state prevents reset, ToggleSwitch shows clear ON/OFF, custom theme colors work
+- Nabawi duplicate: FIXED (excluded from dark/light sections, only shows in layout variant section)
+- Light theme text colors: FIXED (all secondary text now uses var(--text-primary) for better contrast)
+- Adhan light adaptation: FIXED (new light adhan overlay with warm cream background)
+- Iqomah: UNCHANGED (stays dark as requested)
+- Layout themes: CLEANED UP (proper padding, responsive sizing, cordoba redesigned as list)
