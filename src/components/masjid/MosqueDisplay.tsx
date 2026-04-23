@@ -213,9 +213,9 @@ export default function MosqueDisplay() {
   const tzNow = getTimezonedDate(now, effectiveTimeCorrection)
 
   // ---- Derived: Theme ----
-  const theme = THEMES[config.theme]
-  const isLight = theme.isLight
-  const layout = theme.layout || 'default'
+  const theme = THEMES[config.theme] ?? THEMES['haramain']
+  const isLight = theme?.isLight ?? false
+  const layout = theme?.layout || 'default'
 
   // ---- Derived: Main prayers sorted by time (for adhan/iqomah/overlay logic) ----
   const mainPrayers = [...config.prayerTimesTemplate]
