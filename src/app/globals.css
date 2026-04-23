@@ -448,6 +448,7 @@
 .nabawi-sidebar {
   background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(4,26,18,0.6) 100%);
   border-left: 1px solid rgba(201, 168, 76, 0.15);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
 
@@ -511,6 +512,7 @@
 .makkah-top-bar {
   background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(13,10,5,0.4) 100%);
   border-bottom: 1px solid rgba(232, 197, 71, 0.12);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(10px);
 }
 
@@ -589,6 +591,7 @@
 .theme-cordoba .tv-prayer-bar-light {
   background: var(--bg-card);
   border-color: var(--border-subtle);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
 
@@ -596,6 +599,7 @@
   background: rgba(255, 255, 255, 0.6);
   border-color: var(--border-card);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(8px);
 }
 
@@ -620,6 +624,7 @@
   border: 1px solid rgba(139, 69, 19, 0.15);
   border-radius: 0.75rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(8px);
   padding: 0.625rem 0.75rem;
   transition: all 0.3s ease;
@@ -683,6 +688,7 @@
 .theme-al-aqsa-gold .tv-prayer-bar-light {
   background: var(--bg-card);
   border-color: var(--border-subtle);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
 
@@ -695,6 +701,7 @@
   background: rgba(255, 255, 255, 0.75);
   border-color: var(--border-card);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(8px);
 }
 

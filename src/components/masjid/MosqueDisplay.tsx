@@ -136,11 +136,14 @@ function getTimeDiff(targetTimeStr: string, now: Date): number {
 }
 
 /** Format seconds to HH:MM:SS countdown */
-function formatCountdown(totalSeconds: number): string {
+function formatCountdown(totalSeconds: number, showHours = true): string {
   if (totalSeconds < 0) totalSeconds = 0
   const h = Math.floor(totalSeconds / 3600)
   const m = Math.floor((totalSeconds % 3600) / 60)
   const s = totalSeconds % 60
+  if (!showHours) {
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  }
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
@@ -398,13 +401,10 @@ export default function MosqueDisplay() {
       if (iqomahCountdown <= 10 && iqomahCountdown !== lastBeepSecond.current) {
         lastBeepSecond.current = iqomahCountdown
         playTripleBeep()
-      } else if (iqomahCountdown <= 60 && iqomahCountdown > 10 && iqomahCountdown % 10 === 0 && iqomahCountdown !== lastBeepSecond.current) {
-        lastBeepSecond.current = iqomahCountdown
-        playBeep(800, 200)
       }
     }
   }, [iqomahCountdown, activeMode, config.iqomahBeepEnabled, config.soundEnabled])
-
+  
   // ---- Effect: Fullscreen change listener ----
   useEffect(() => {
     const handler = () => setIsFullscreen(!!document.fullscreenElement)
@@ -1456,7 +1456,7 @@ export default function MosqueDisplay() {
             className={`iqomah-countdown-display iqomah-countdown-animation-${config.iqomahCountdownAnimation || 'pulse'}`}
             style={{ fontFamily: config.iqomahFontFamily, fontSize: `clamp(4rem, ${config.iqomahFontSize}vw, ${config.iqomahFontSize}rem)` }}
           >
-            {formatCountdown(iqomahCountdown)}
+            {formatCountdown(iqomahCountdown, false)}
           </div>
 
           {/* Beep indicator in last 60s */}
