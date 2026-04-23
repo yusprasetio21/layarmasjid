@@ -594,6 +594,8 @@ function SettingsDashboard() {
   const [saving, setSaving] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [imageUploading, setImageUploading] = useState<Record<number, boolean>>({})
+  const [serverThemes, setServerThemes] = useState<Array<{ id: string; name: string; category: string; layout: string; isLight: boolean; accentGold: string; accentLight: string; bgGradient: string; bgSolidColor: string; bgType: string; description: string }>>([])
+  const [loadingThemes, setLoadingThemes] = useState(false)
   const formStateRef = useRef(formState)
   formStateRef.current = formState
 
@@ -844,6 +846,87 @@ function SettingsDashboard() {
 
     toast.success('Gambar berhasil dihapus')
   }, [])
+
+  // ─── Fetch server themes (public) ─────────────────────────────
+  const fetchServerThemes = useCallback(async () => {
+    setLoadingThemes(true)
+    try {
+      const res = await fetch('/api/themes/public')
+      const data = await res.json()
+      if (res.ok && data.themes) {
+        setServerThemes(data.themes.map((t: Record<string, unknown>) => ({
+          id: t.id,
+          name: t.name,
+          category: t.category,
+          layout: t.layout,
+          isLight: t.isLight,
+          accentGold: t.accentGold || '#C9A84C',
+          accentLight: t.accentLight || '#E8D48B',
+          bgGradient: t.bgGradient || '',
+          bgSolidColor: t.bgSolidColor || '',
+          bgType: t.bgType || 'gradient',
+          description: t.description || '',
+        })))
+      }
+    } catch {
+      // Silently fail - themes are optional
+    } finally {
+      setLoadingThemes(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchServerThemes()
+  }, [fetchServerThemes])
+
+  // ─── Apply server theme to device config ──────────────────────
+  const applyServerTheme = useCallback(async (themeId: string) => {
+    try {
+      const res = await fetch(`/api/themes/${themeId}`)
+      const data = await res.json()
+      if (!res.ok || !data.theme) {
+        toast.error('Gagal memuat tema')
+        return
+      }
+      const t = data.theme
+      // Apply theme settings to the form state
+      const updates: Partial<MasjidConfig> = {
+        theme: 'custom' as MasjidConfig['theme'],
+        customThemeAccent: t.accentGold || '#C9A84C',
+        customThemeAccentLight: t.accentLight || '#E8D48B',
+      }
+      // Apply background
+      if (t.bgType === 'image' && t.bgImageUrl) {
+        updates.customBackgroundImage = t.bgImageUrl
+        updates.customBackgroundOpacity = t.bgImageOpacity || 30
+      } else {
+        updates.customBackgroundImage = ''
+      }
+      // Apply clock settings
+      if (t.clockType) updates.clockType = t.clockType
+      if (t.clockFont) updates.digitalFontFamily = t.clockFont
+      if (t.clockSize) updates.digitalFontSize = t.clockSize
+      if (t.clockStyle) updates.clockStyle = t.clockStyle
+      // Apply font settings
+      if (t.mosqueNameFont) updates.mosqueNameFontFamily = t.mosqueNameFont
+      if (t.mosqueNameSize) updates.mosqueNameFontSize = t.mosqueNameSize
+      if (t.dateFont) updates.dateFontFamily = t.dateFont
+      if (t.dateSize) updates.dateFontSize = t.dateSize
+      if (t.dateColor) updates.dateColor = t.dateColor
+      // Apply card settings
+      if (t.cardBg) updates.cardBgColor = t.cardBg
+      if (t.cardBorder) updates.cardBorderColor = t.cardBorder
+      if (t.cardFontSize) updates.prayerCardFontSize = t.cardFontSize
+      // Apply iqomah settings
+      if (t.iqomahFont) updates.iqomahFontFamily = t.iqomahFont
+      if (t.iqomahSize) updates.iqomahFontSize = t.iqomahSize
+
+      updateForm(updates)
+      toast.success(`Tema "${t.name}" diterapkan! Simpan untuk menyimpan perubahan.`)
+    } catch {
+      toast.error('Gagal memuat tema dari server')
+    }
+  }, [updateForm])
 
   // ─── Shorthand alias for readability ──────────────────────────────
   const c = formState
@@ -2321,6 +2404,69 @@ function SettingsDashboard() {
                       </button>
                     ))}
                   </div>
+                </div>
+
+                {/* Server Themes (from Theme Designer) */}
+                <div className="mt-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Tema dari Server</p>
+                      <Sparkles className="h-3 w-3 text-purple-400" />
+                    </div>
+                    <button
+                      onClick={fetchServerThemes}
+                      disabled={loadingThemes}
+                      className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+                    >
+                      {loadingThemes ? 'Memuat...' : 'Refresh'}
+                    </button>
+                  </div>
+                  <InfoBanner>
+                    Tema buatan superadmin yang tersimpan di server. Klik untuk menerapkan ke perangkat ini.
+                  </InfoBanner>
+                  {serverThemes.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-zinc-800 py-4 text-center">
+                      <p className="text-xs text-zinc-600">Belum ada tema yang tersedia</p>
+                      <Link href="/superadmin/themes" className="text-[10px] text-purple-400 hover:text-purple-300">
+                        Buat tema di Theme Designer →
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="mt-2 grid grid-cols-1 gap-2">
+                      {serverThemes.map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => applyServerTheme(t.id)}
+                          className="flex items-center gap-3 rounded-lg border p-3 text-left transition-all border-zinc-700 bg-zinc-800/50 hover:border-purple-500/40 hover:bg-purple-500/5"
+                        >
+                          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-zinc-600/50" style={{ background: t.bgType === 'solid' ? t.bgSolidColor : (t.bgGradient || '#111') }}>
+                            <div className="absolute bottom-0 left-0 right-0 h-2" style={{ backgroundColor: t.accentGold, opacity: 0.6 }} />
+                            <div className="absolute top-1 left-1 h-1 w-1 rounded-full" style={{ backgroundColor: t.accentGold }} />
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-medium text-zinc-300 truncate">{t.name}</span>
+                            <div className="flex items-center gap-1.5">
+                              <Badge className="border-zinc-700 bg-zinc-800 text-[9px] text-zinc-400 px-1.5 py-0">
+                                {t.category}
+                              </Badge>
+                              {t.layout && t.layout !== 'default' && (
+                                <Badge className="border-purple-500/30 bg-purple-500/10 text-[9px] text-purple-400 px-1.5 py-0">
+                                  {t.layout}
+                                </Badge>
+                              )}
+                              {t.isLight && (
+                                <Badge className="border-amber-500/30 bg-amber-500/10 text-[9px] text-amber-400 px-1.5 py-0">
+                                  light
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-zinc-600" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Custom Theme */}
