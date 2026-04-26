@@ -1373,7 +1373,7 @@ function SettingsDashboard() {
                       value={c.digitalFontSize}
                       onChange={(v) => updateForm({ digitalFontSize: v })}
                       min={2}
-                      max={15}
+                      max={40}
                       step={0.5}
                       unit="rem"
                     />
