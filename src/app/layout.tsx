@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
+import DeviceDetector from "@/components/DeviceDetector";
 
 export const metadata: Metadata = {
   title: "MasjidScreen — Jam Masjid Digital",
@@ -23,6 +24,7 @@ export default function RootLayout({
       <body className="antialiased">
         {children}
         <Toaster position="top-center" richColors />
+        <DeviceDetector />
       </body>
     </html>
   );
