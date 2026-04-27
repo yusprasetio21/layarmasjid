@@ -1641,3 +1641,161 @@
   0%, 100% { opacity: 0.7; text-shadow: 0 0 10px var(--accent-gold); }
   50% { opacity: 1; text-shadow: 0 0 40px var(--accent-gold), 0 0 80px color-mix(in srgb, var(--accent-gold) 30%, transparent); }
 }
+/* ============================================
+   DEVICE DETECTION — Browser & Screen
+   ============================================ */
+
+/* ─── SEMBUNYIKAN CURSOR (TV / Fullscreen) ─── */
+/* Apply class 'is-tv' atau 'is-tizen' ke <html> via JS */
+
+html.is-tv *,
+html.is-tizen * {
+  cursor: none !important;
+}
+
+/* ─── TIZEN UMUM ─── */
+/* Matikan efek yang tidak disupport */
+
+html.is-tizen .tv-screen {
+  /* Ganti backdrop-filter yang sering crash di Tizen */
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.is-tizen .nabawi-sidebar,
+html.is-tizen .makkah-top-bar {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background: rgba(0, 0, 0, 0.85) !important;
+}
+
+html.is-tizen .cordoba-prayer-card,
+html.is-tizen .tv-prayer-card-light {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background: rgba(20, 20, 20, 0.95) !important;
+}
+
+/* Matikan animasi berat di Tizen */
+html.is-tizen .running-text-scroll-left,
+html.is-tizen .running-text-scroll-right {
+  /* Tetap jalan tapi tidak pakai GPU berat */
+  will-change: auto;
+}
+
+/* Sembunyikan efek particle Makkah di Tizen — berat di GPU */
+html.is-tizen .theme-makkah::after {
+  display: none;
+}
+
+/* Geometric pattern Nabawi — ringankan */
+html.is-tizen .theme-nabawi::after {
+  display: none;
+}
+
+/* ─── TIZEN LAMA (versi 3 & 4) ─── */
+/* Class 'tizen-3' atau 'tizen-4' di-apply via JS */
+
+html.tizen-3 *,
+html.tizen-4 * {
+  /* Matikan SEMUA animasi — device tidak kuat */
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important;
+}
+
+html.tizen-3 .clock-digital,
+html.tizen-4 .clock-digital {
+  /* Hilangkan text-shadow berat */
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+html.tizen-3 .post-iqomah-calligraphy-ar,
+html.tizen-4 .post-iqomah-calligraphy-ar {
+  /* Gradient text tidak support di Tizen lama */
+  -webkit-text-fill-color: var(--accent-gold) !important;
+  background: none !important;
+  filter: none !important;
+}
+
+html.tizen-3 .adhan-mode-active::before,
+html.tizen-3 .adhan-mode-active::after,
+html.tizen-4 .adhan-mode-active::before,
+html.tizen-4 .adhan-mode-active::after {
+  display: none;
+}
+
+/* ─── LOW MEMORY (RAM ≤ 1GB) ─── */
+/* TV Android jadul, set-top box murah */
+
+html.low-memory * {
+  animation: none !important;
+  transition: none !important;
+  will-change: auto !important;
+}
+
+html.low-memory .tv-screen::before,
+html.low-memory .tv-screen::after {
+  display: none !important;
+}
+
+html.low-memory .clock-digital {
+  text-shadow: none !important;
+}
+
+html.low-memory .status-dot {
+  animation: none !important;
+}
+
+/* ─── MOBILE (Halaman Settings) ─── */
+/* Perbaikan agar settings terasa native app */
+
+html.is-mobile {
+  /* Hilangkan bounce scroll khas browser */
+  overscroll-behavior: none;
+}
+
+html.is-mobile body {
+  /* Cegah zoom saat tap input */
+  touch-action: manipulation;
+}
+
+/* Input lebih besar di mobile — tidak perlu zoom */
+html.is-mobile input,
+html.is-mobile select,
+html.is-mobile textarea {
+  font-size: 16px !important; /* minimal 16px cegah auto-zoom iOS */
+}
+
+/* Slider lebih mudah disentuh */
+html.is-mobile input[type="range"] {
+  height: 36px;
+  -webkit-appearance: none;
+}
+
+html.is-mobile input[type="range"]::-webkit-slider-thumb {
+  width: 28px;
+  height: 28px;
+  -webkit-appearance: none;
+  background: var(--accent-gold, #C9A84C);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+html.is-mobile input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+}
+
+/* ─── FALLBACK: tidak support CSS custom properties ─── */
+/* Browser sangat lama — Tizen 2.x */
+
+html.no-vars .tv-screen {
+  background: #050505;
+  color: #ffffff;
+}
+
+html.no-vars .clock-digital {
+  color: #C9A84C;
+  text-shadow: none;
+}

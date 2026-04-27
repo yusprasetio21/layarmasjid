@@ -76,7 +76,54 @@ import {
   FileImage,
   BookOpen,
   MapPin,
+  ChevronDown,
 } from 'lucide-react'
+
+// ─── iOS Styles & Animations ─────────────────────────────────────────
+const iosScrollStyles = `
+  .ios-smooth-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  .ios-card {
+    transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+  }
+  
+  .ios-card:active {
+    transform: scale(0.98);
+  }
+  
+  @keyframes ios-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .ios-fade-in {
+    animation: ios-fade-in 0.3s ease-out;
+  }
+  
+  .ios-haptic-feedback {
+    transition: all 0.1s ease;
+  }
+  
+  .ios-haptic-feedback:active {
+    opacity: 0.7;
+  }
+`
+
+// Add styles to document
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style')
+  styleSheet.textContent = iosScrollStyles
+  document.head.appendChild(styleSheet)
+}
 
 // ─── Constants ────────────────────────────────────────────────────────
 const FONT_OPTIONS_MOSQUE = [
@@ -176,7 +223,7 @@ const IQOMAH_QUICK = [
   { label: "15'", value: 15 },
 ]
 
-// ─── Helper: Button Group ────────────────────────────────────────────
+// ─── iOS Style Button Group ──────────────────────────────────────────
 function ButtonGroup({
   options,
   value,
@@ -193,10 +240,10 @@ function ButtonGroup({
           key={opt.value}
           type="button"
           onClick={() => onChange(opt.value)}
-          className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
+          className={`ios-haptic-feedback rounded-full px-4 py-2 text-sm font-medium transition-all ${
             value === opt.value
-              ? 'border-amber-500 bg-amber-500/20 text-amber-400'
-              : 'border-zinc-700 bg-zinc-800/50 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
+              ? 'bg-amber-500 text-black shadow-lg'
+              : 'bg-zinc-800 text-zinc-400 active:bg-zinc-700'
           }`}
         >
           {opt.label}
@@ -238,46 +285,45 @@ function AddHadithForm({ onAdd }: { onAdd: (item: { id: string; type: 'hadith' |
     return (
       <button
         onClick={() => setIsAdding(true)}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-700 py-2.5 text-xs font-medium text-zinc-400 transition-colors hover:border-amber-500/40 hover:bg-amber-500/5 hover:text-amber-400"
+        className="ios-haptic-feedback flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-700 py-3 text-sm font-medium text-zinc-400 transition-all hover:border-amber-500/40 hover:bg-amber-500/5 hover:text-amber-400"
       >
-        <Plus className="h-3.5 w-3.5" />
+        <Plus className="h-4 w-4" />
         Tambah Hadits / Ayat
       </button>
     )
   }
 
   return (
-    <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-3 space-y-3">
+    <div className="rounded-xl border border-zinc-700 bg-zinc-900/50 p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-zinc-300">Tambah {type === 'ayat' ? 'Ayat Al-Quran' : 'Hadits'}</span>
+        <span className="text-sm font-medium text-zinc-300">Tambah {type === 'ayat' ? 'Ayat Al-Quran' : 'Hadits'}</span>
         <button
           onClick={() => setIsAdding(false)}
-          className="flex h-6 w-6 items-center justify-center rounded text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 transition-colors"
+          className="ios-haptic-feedback flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
         >
-          <X className="h-3.5 w-3.5" />
+          <X className="h-4 w-4" />
         </button>
       </div>
 
-      {/* Type selector */}
       <div className="flex items-center gap-2">
-        <span className="text-[10px] text-zinc-500">Tipe:</span>
-        <div className="flex rounded-lg border border-zinc-700 overflow-hidden">
+        <span className="text-xs text-zinc-500">Tipe:</span>
+        <div className="flex rounded-lg overflow-hidden bg-zinc-800">
           <button
             onClick={() => setType('hadith')}
-            className={`px-3 py-1 text-[10px] font-semibold transition-colors ${
+            className={`px-4 py-1.5 text-xs font-semibold transition-all ${
               type === 'hadith'
                 ? 'bg-amber-500/20 text-amber-400'
-                : 'text-zinc-500 hover:text-zinc-300'
+                : 'text-zinc-500'
             }`}
           >
             Hadits
           </button>
           <button
             onClick={() => setType('ayat')}
-            className={`px-3 py-1 text-[10px] font-semibold transition-colors ${
+            className={`px-4 py-1.5 text-xs font-semibold transition-all ${
               type === 'ayat'
                 ? 'bg-emerald-500/20 text-emerald-400'
-                : 'text-zinc-500 hover:text-zinc-300'
+                : 'text-zinc-500'
             }`}
           >
             Ayat
@@ -285,56 +331,52 @@ function AddHadithForm({ onAdd }: { onAdd: (item: { id: string; type: 'hadith' |
         </div>
       </div>
 
-      {/* Arabic text */}
       <div>
-        <label className="text-[10px] text-zinc-500 mb-1 block">Teks Arab</label>
+        <label className="text-xs text-zinc-500 mb-1.5 block">Teks Arab</label>
         <textarea
           value={arabic}
           onChange={(e) => setArabic(e.target.value)}
           dir="rtl"
           placeholder="اَلْحَمْدُ لِلّٰهِ رَبِّ الْعَالَمِيْنَ"
-          className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/25 font-amiri text-right leading-relaxed resize-none"
+          className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 focus:border-amber-500/50 focus:outline-none focus:ring-2 focus:ring-amber-500/25 font-amiri text-right leading-relaxed resize-none"
           rows={2}
         />
       </div>
 
-      {/* Meaning */}
       <div>
-        <label className="text-[10px] text-zinc-500 mb-1 block">Arti / Terjemahan</label>
+        <label className="text-xs text-zinc-500 mb-1.5 block">Arti / Terjemahan</label>
         <textarea
           value={meaning}
           onChange={(e) => setMeaning(e.target.value)}
           placeholder="Segala puji bagi Allah, Tuhan seluruh alam."
-          className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/25 resize-none"
+          className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 focus:border-amber-500/50 focus:outline-none focus:ring-2 focus:ring-amber-500/25 resize-none"
           rows={2}
         />
       </div>
 
-      {/* Source */}
       <div>
-        <label className="text-[10px] text-zinc-500 mb-1 block">Sumber</label>
+        <label className="text-xs text-zinc-500 mb-1.5 block">Sumber</label>
         <input
           type="text"
           value={source}
           onChange={(e) => setSource(e.target.value)}
           placeholder="HR. Bukhari / QS. Al-Fatihah: 1"
-          className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/25"
+          className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 focus:border-amber-500/50 focus:outline-none focus:ring-2 focus:ring-amber-500/25"
         />
       </div>
 
-      {/* Submit */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 pt-2">
         <button
           onClick={() => setIsAdding(false)}
-          className="flex-1 rounded-lg border border-zinc-700 py-2 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-800"
+          className="flex-1 rounded-xl border border-zinc-700 py-2.5 text-sm font-medium text-zinc-400 transition-all hover:bg-zinc-800"
         >
           Batal
         </button>
         <button
           onClick={handleSubmit}
-          className="flex-1 rounded-lg bg-amber-500/20 py-2 text-xs font-semibold text-amber-400 transition-colors hover:bg-amber-500/30"
+          className="flex-1 rounded-xl bg-amber-500/20 py-2.5 text-sm font-semibold text-amber-400 transition-all hover:bg-amber-500/30"
         >
-          <Plus className="mr-1 inline h-3 w-3" />
+          <Plus className="mr-1 inline h-4 w-4" />
           Tambah
         </button>
       </div>
@@ -345,9 +387,9 @@ function AddHadithForm({ onAdd }: { onAdd: (item: { id: string; type: 'hadith' |
 // ─── Helper: Section Label ───────────────────────────────────────────
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mb-2 flex items-center gap-2">
+    <div className="mb-3 flex items-center gap-2">
       <div className="h-px flex-1 bg-zinc-800" />
-      <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+      <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
         {children}
       </span>
       <div className="h-px flex-1 bg-zinc-800" />
@@ -355,7 +397,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-// ─── Helper: Slider with label ───────────────────────────────────────
+// ─── iOS Style Slider ────────────────────────────────────────────────
 function SliderField({
   label,
   value,
@@ -376,8 +418,8 @@ function SliderField({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <Label className="text-xs text-zinc-400">{label}</Label>
-        <span className="text-xs font-mono text-amber-400">
+        <Label className="text-sm text-zinc-400">{label}</Label>
+        <span className="text-sm font-semibold text-amber-400">
           {value}
           {unit}
         </span>
@@ -394,7 +436,7 @@ function SliderField({
   )
 }
 
-// ─── Helper: Toggle Switch with clear ON/OFF visual ──────────────────
+// ─── iOS Style Toggle Switch ─────────────────────────────────────────
 function ToggleSwitch({
   label,
   checked,
@@ -407,39 +449,28 @@ function ToggleSwitch({
   description?: string
 }) {
   return (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex items-center justify-between gap-3 py-1">
       <div className="flex-1 min-w-0">
-        <div className="text-xs text-zinc-300">{label}</div>
+        <div className="text-sm font-medium text-zinc-200">{label}</div>
         {description && (
-          <div className="text-[10px] text-zinc-500 mt-0.5">{description}</div>
+          <div className="text-xs text-zinc-500 mt-0.5">{description}</div>
         )}
       </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <button
-          type="button"
-          role="switch"
-          aria-checked={checked}
-          onClick={() => onChange(!checked)}
-          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${
-            checked
-              ? 'bg-emerald-500'
-              : 'bg-zinc-700'
-          }`}
-        >
-          <span
-            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-              checked ? 'translate-x-5' : 'translate-x-0'
-            }`}
-          />
-        </button>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={`ios-haptic-feedback relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500/50 ${
+          checked ? 'bg-amber-500' : 'bg-zinc-700'
+        }`}
+      >
         <span
-          className={`text-[10px] font-bold w-6 text-right select-none ${
-            checked ? 'text-emerald-400' : 'text-zinc-600'
-          }`}
-        >
-          {checked ? 'ON' : 'OFF'}
-        </span>
-      </div>
+          className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition-all duration-300 ease-in-out ${
+            checked ? 'translate-x-7' : 'translate-x-1'
+          } mt-1`}
+        />
+      </button>
     </div>
   )
 }
@@ -447,14 +478,14 @@ function ToggleSwitch({
 // ─── Helper: Info Banner ─────────────────────────────────────────────
 function InfoBanner({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
-      <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
-      <span className="text-[11px] leading-relaxed text-amber-400/80">{children}</span>
+    <div className="flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+      <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+      <span className="text-xs leading-relaxed text-amber-400/80">{children}</span>
     </div>
   )
 }
 
-// ─── Login Screen ────────────────────────────────────────────────────
+// ─── iOS Login Screen ─────────────────────────────────────────────────
 function LoginScreen() {
   const [otp, setOtp] = useState('')
   const [password, setPassword] = useState('')
@@ -486,91 +517,93 @@ function LoginScreen() {
   }, [otp, password, authenticate])
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4">
-      <Card className="w-full max-w-sm border-zinc-800 bg-zinc-900">
-        <CardHeader className="items-center text-center">
-          <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10">
-            <Sparkles className="h-8 w-8 text-amber-400" />
-          </div>
-          <CardTitle className="text-xl text-zinc-100">
-            MasjidScreen Settings
-          </CardTitle>
-          <CardDescription className="text-zinc-500">
-            Kelola tampilan jam masjid Anda
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="space-y-2">
-            <Label className="text-xs text-zinc-400">Device ID (4 digit)</Label>
-            <div className="flex justify-center">
-              <InputOTP
-                maxLength={4}
-                value={otp}
-                onChange={setOtp}
-                containerClassName="gap-3"
-              >
-                <InputOTPGroup>
-                  <InputOTPSlot index={0} className="h-12 w-12 bg-zinc-800 border-zinc-700 text-lg text-amber-400" />
-                  <InputOTPSlot index={1} className="h-12 w-12 bg-zinc-800 border-zinc-700 text-lg text-amber-400" />
-                  <InputOTPSlot index={2} className="h-12 w-12 bg-zinc-800 border-zinc-700 text-lg text-amber-400" />
-                  <InputOTPSlot index={3} className="h-12 w-12 bg-zinc-800 border-zinc-700 text-lg text-amber-400" />
-                </InputOTPGroup>
-              </InputOTP>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 px-4">
+      <div className="w-full max-w-sm ios-fade-in">
+        <Card className="border-zinc-800 bg-zinc-900/50 backdrop-blur-xl shadow-2xl rounded-3xl overflow-hidden">
+          <CardHeader className="items-center text-center pt-8">
+            <div className="mb-3 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 shadow-xl">
+              <Sparkles className="h-10 w-10 text-white" />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-xs text-zinc-400">Password</Label>
-            <div className="relative">
-              <Input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Masukkan password"
-                className="bg-zinc-800 border-zinc-700 pr-10 text-zinc-200 placeholder:text-zinc-600"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleLogin()
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
+            <CardTitle className="text-2xl font-bold text-zinc-100">
+              MasjidScreen
+            </CardTitle>
+            <CardDescription className="text-zinc-500">
+              Kelola tampilan jam masjid Anda
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6 pb-8">
+            <div className="space-y-2">
+              <Label className="text-sm text-zinc-400">Device ID (4 digit)</Label>
+              <div className="flex justify-center">
+                <InputOTP
+                  maxLength={4}
+                  value={otp}
+                  onChange={setOtp}
+                  containerClassName="gap-3"
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} className="h-14 w-14 rounded-xl bg-zinc-800 border-zinc-700 text-xl font-bold text-amber-400" />
+                    <InputOTPSlot index={1} className="h-14 w-14 rounded-xl bg-zinc-800 border-zinc-700 text-xl font-bold text-amber-400" />
+                    <InputOTPSlot index={2} className="h-14 w-14 rounded-xl bg-zinc-800 border-zinc-700 text-xl font-bold text-amber-400" />
+                    <InputOTPSlot index={3} className="h-14 w-14 rounded-xl bg-zinc-800 border-zinc-700 text-xl font-bold text-amber-400" />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
             </div>
-          </div>
 
-          {error && (
-            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-center text-xs text-red-400">
-              {error}
+            <div className="space-y-2">
+              <Label className="text-sm text-zinc-400">Password</Label>
+              <div className="relative">
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Masukkan password"
+                  className="bg-zinc-800 border-zinc-700 rounded-xl pr-12 h-12 text-zinc-200 placeholder:text-zinc-600"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleLogin()
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 active:text-zinc-300"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
             </div>
-          )}
 
-          <Button
-            onClick={handleLogin}
-            disabled={loading}
-            className="w-full bg-amber-500 text-black hover:bg-amber-600"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Memproses...
-              </>
-            ) : (
-              'Masuk'
+            {error && (
+              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3">
+                <p className="text-sm text-red-400 text-center">{error}</p>
+              </div>
             )}
-          </Button>
 
-          <Link href="/">
-            <Button variant="ghost" className="w-full gap-2 text-zinc-400 hover:text-amber-400">
-              <ArrowLeft className="h-4 w-4" />
-              Kembali ke Tampilan
+            <Button
+              onClick={handleLogin}
+              disabled={loading}
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-semibold text-base shadow-lg active:scale-98 transition-all"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Memproses...
+                </>
+              ) : (
+                'Masuk'
+              )}
             </Button>
-          </Link>
-        </CardContent>
-      </Card>
+
+            <Link href="/">
+              <Button variant="ghost" className="w-full gap-2 text-zinc-400 hover:text-amber-400">
+                <ArrowLeft className="h-4 w-4" />
+                Kembali ke Tampilan
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
@@ -933,100 +966,106 @@ function SettingsDashboard() {
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-950">
-      {/* ─── Header ───────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur-sm">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <Settings className="h-5 w-5 text-amber-400" />
-            <h1 className="text-sm font-semibold text-zinc-200">
-              MasjidScreen Settings
-            </h1>
-            {hasUnsavedChanges && (
-              <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-400">
-                Belum disimpan
+      {/* ─── iOS Style Header ───────────────────────────────────────── */}
+      <header className="sticky top-0 z-40 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur-xl">
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15">
+                <Settings className="h-5 w-5 text-amber-400" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-zinc-100">
+                  Pengaturan
+                </h1>
+                {deviceId && (
+                  <p className="text-xs text-zinc-500">ID: {deviceId}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasUnsavedChanges && (
+                <span className="rounded-full bg-amber-500/20 px-2 py-1 text-[10px] font-medium text-amber-400">
+                  Belum disimpan
+                </span>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={openPreview}
+                className="h-9 gap-1 rounded-xl text-zinc-400 active:text-emerald-400"
+              >
+                <Eye className="h-4 w-4" />
+                <span className="text-xs">Preview</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                className="h-9 w-9 rounded-xl text-zinc-500 active:text-red-400"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-2 pt-1 border-t border-zinc-800/50">
+            <div className="flex items-center gap-1.5">
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              <span className="text-[10px] text-zinc-500">
+                {lastSynced ? `Tersinkronisasi ${lastSynced}` : 'Tersinkronisasi'}
               </span>
-            )}
+            </div>
+            <Link href="/">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1 text-[11px] text-zinc-400 hover:text-amber-400"
+              >
+                <Monitor className="h-3 w-3" />
+                Kembali ke Tampilan
+              </Button>
+            </Link>
           </div>
-          <div className="flex items-center gap-2">
-            {deviceId && (
-              <Badge className="border-amber-500/30 bg-amber-500/10 text-amber-400 text-[10px]">
-                ID: {deviceId}
-              </Badge>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={openPreview}
-              className="h-7 gap-1 text-[11px] text-zinc-400 hover:text-emerald-400"
-            >
-              <Eye className="h-3 w-3" />
-              Preview
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              className="h-8 w-8 text-zinc-500 hover:text-red-400"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-        <div className="flex items-center justify-between border-t border-zinc-800/50 px-4 py-1.5">
-          <div className="flex items-center gap-1.5">
-            <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            <span className="text-[10px] text-zinc-500">
-              {lastSynced ? `Tersinkronisasi ${lastSynced}` : 'Tersinkronisasi'}
-            </span>
-          </div>
-          <Link href="/">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1 text-[11px] text-zinc-400 hover:text-amber-400"
-            >
-              <Monitor className="h-3 w-3" />
-              Kembali ke Tampilan
-            </Button>
-          </Link>
         </div>
       </header>
 
-      {/* ─── Scrollable Content ───────────────────────────────────── */}
-      <ScrollArea className="flex-1 pb-24">
-        <div className="mx-auto max-w-lg space-y-3 p-4">
+      {/* ─── Scrollable Content with iOS Smooth Scroll ───────────────── */}
+      <ScrollArea className="flex-1 ios-smooth-scroll">
+        <div className="mx-auto max-w-lg space-y-4 p-4 pb-32">
           <Accordion
             type="multiple"
-            defaultValue={['mosque', 'clock', 'prayer', 'adhan', 'running', 'info', 'theme']}
-            className="space-y-3"
+            defaultValue={['mosque', 'clock', 'prayer', 'adhan', 'running', 'info', 'theme', 'timezone']}
+            className="space-y-4"
           >
             {/* ─── Section A: Nama Masjid & Tanggal ─────────────────── */}
-            <AccordionItem value="mosque" className="rounded-xl border border-zinc-800 bg-zinc-900 px-4">
-              <AccordionTrigger className="py-4 text-sm font-medium text-zinc-200 hover:no-underline">
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4 text-amber-400" />
+            <AccordionItem value="mosque" className="rounded-2xl border border-zinc-800 bg-zinc-900/30 backdrop-blur-sm overflow-hidden">
+              <AccordionTrigger className="px-5 py-4 text-base font-semibold text-zinc-200 hover:no-underline">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15">
+                    <CalendarDays className="h-5 w-5 text-amber-400" />
+                  </div>
                   Nama Masjid & Tanggal
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="space-y-4 pb-4">
+              <AccordionContent className="px-5 pb-5 space-y-5">
                 {/* Mosque Name (Indonesian) */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-400">Nama Masjid (Indonesia)</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-zinc-400">Nama Masjid (Indonesia)</Label>
                   <Input
                     value={c.mosqueName}
                     onChange={(e) => updateForm({ mosqueName: e.target.value })}
-                    className="bg-zinc-800 border-zinc-700 text-sm text-zinc-200"
+                    className="bg-zinc-800 border-zinc-700 rounded-xl text-base text-zinc-200 h-12"
                     placeholder="Nama masjid"
                   />
                 </div>
 
                 {/* Mosque Name (Arabic) */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-400">Nama Masjid (Arab)</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-zinc-400">Nama Masjid (Arab)</Label>
                   <Input
                     value={c.mosqueNameArabic}
                     onChange={(e) => updateForm({ mosqueNameArabic: e.target.value })}
-                    className="bg-zinc-800 border-zinc-700 text-sm text-zinc-200"
+                    className="bg-zinc-800 border-zinc-700 rounded-xl text-base text-zinc-200 h-12"
                     dir="rtl"
                     style={{ fontFamily: "'Amiri', serif" }}
                     placeholder="مَسْجِد"
@@ -1034,16 +1073,16 @@ function SettingsDashboard() {
                 </div>
 
                 {/* Mosque Font */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-400">Font Nama Masjid</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-zinc-400">Font Nama Masjid</Label>
                   <Select
                     value={c.mosqueNameFontFamily}
                     onValueChange={(v) => updateForm({ mosqueNameFontFamily: v })}
                   >
-                    <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 text-sm text-zinc-200">
+                    <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 rounded-xl h-12 text-zinc-200">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="border-zinc-800 bg-zinc-900">
+                    <SelectContent className="border-zinc-800 bg-zinc-900 rounded-xl">
                       {FONT_OPTIONS_MOSQUE.map((f) => (
                         <SelectItem key={f.value} value={f.value} className="text-zinc-300">
                           {f.label}
@@ -1067,16 +1106,16 @@ function SettingsDashboard() {
                 <Separator className="bg-zinc-800" />
 
                 {/* Date Font */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-400">Font Tanggal / Hari</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-zinc-400">Font Tanggal / Hari</Label>
                   <Select
                     value={c.dateFontFamily}
                     onValueChange={(v) => updateForm({ dateFontFamily: v })}
                   >
-                    <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 text-sm text-zinc-200">
+                    <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 rounded-xl h-12 text-zinc-200">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="border-zinc-800 bg-zinc-900">
+                    <SelectContent className="border-zinc-800 bg-zinc-900 rounded-xl">
                       {FONT_OPTIONS_DATE.map((f) => (
                         <SelectItem key={f.value} value={f.value} className="text-zinc-300">
                           {f.label}
@@ -1109,22 +1148,22 @@ function SettingsDashboard() {
                 />
 
                 {/* Date Color */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-400">Warna Tanggal</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-zinc-400">Warna Tanggal</Label>
                   <div className="flex flex-wrap gap-2">
                     {DATE_COLORS.map((dc) => (
                       <button
                         key={dc.value}
                         type="button"
                         onClick={() => updateForm({ dateColor: dc.value })}
-                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition-all ${
+                        className={`ios-haptic-feedback flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all ${
                           c.dateColor === dc.value
-                            ? 'border-amber-500 bg-amber-500/10 text-amber-400'
-                            : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
+                            ? 'bg-amber-500/20 text-amber-400'
+                            : 'bg-zinc-800 text-zinc-500'
                         }`}
                       >
                         <div
-                          className="h-3 w-3 rounded-full border border-zinc-600"
+                          className="h-3 w-3 rounded-full"
                           style={{ backgroundColor: dc.value }}
                         />
                         {dc.label}
@@ -1136,73 +1175,75 @@ function SettingsDashboard() {
             </AccordionItem>
 
             {/* ─── Section: Pengaturan Waktu ────────────────────── */}
-            <AccordionItem value="timezone" className="rounded-xl border border-zinc-800 bg-zinc-900 px-4">
-              <AccordionTrigger className="py-4 text-sm font-medium text-zinc-200 hover:no-underline">
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-amber-400" />
+            <AccordionItem value="timezone" className="rounded-2xl border border-zinc-800 bg-zinc-900/30 backdrop-blur-sm overflow-hidden">
+              <AccordionTrigger className="px-5 py-4 text-base font-semibold text-zinc-200 hover:no-underline">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15">
+                    <MapPin className="h-5 w-5 text-blue-400" />
+                  </div>
                   Pengaturan Waktu
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="space-y-4 pb-4">
+              <AccordionContent className="px-5 pb-5 space-y-5">
                 {/* Auto / Manual toggle */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-400">Mode Waktu</Label>
-                  <div className="flex gap-2">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-zinc-400">Mode Waktu</Label>
+                  <div className="flex gap-3">
                     <button
                       type="button"
                       onClick={() => updateForm({ timezoneMode: 'auto' })}
-                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                      className={`ios-haptic-feedback flex flex-1 items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-all ${
                         c.timezoneMode === 'auto'
                           ? 'border-amber-500/50 bg-amber-500/10 text-amber-400'
-                          : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
+                          : 'border-zinc-700 bg-zinc-800/50 text-zinc-500'
                       }`}
                     >
-                      <MapPin className="h-3.5 w-3.5" />
+                      <MapPin className="h-4 w-4" />
                       Otomatis (GPS)
                     </button>
                     <button
                       type="button"
                       onClick={() => updateForm({ timezoneMode: 'manual' })}
-                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                      className={`ios-haptic-feedback flex flex-1 items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-all ${
                         c.timezoneMode === 'manual'
                           ? 'border-amber-500/50 bg-amber-500/10 text-amber-400'
-                          : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
+                          : 'border-zinc-700 bg-zinc-800/50 text-zinc-500'
                       }`}
                     >
-                      <Clock className="h-3.5 w-3.5" />
+                      <Clock className="h-4 w-4" />
                       Manual
                     </button>
                   </div>
                 </div>
 
                 {c.timezoneMode === 'auto' && (
-                  <div className="rounded-lg border border-zinc-800 bg-zinc-800/50 px-3 py-2.5">
-                    <p className="text-[10px] text-zinc-500">
+                  <div className="rounded-xl border border-zinc-800 bg-zinc-800/30 px-4 py-3">
+                    <p className="text-xs text-zinc-500">
                       Deteksi zona waktu perangkat:
                     </p>
-                    <p className="mt-0.5 text-xs font-medium text-amber-400">
+                    <p className="mt-1 text-base font-semibold text-amber-400">
                       {typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'N/A'}
                     </p>
-                    <p className="mt-0.5 text-[10px] text-zinc-600">
+                    <p className="mt-1 text-xs text-zinc-600">
                       Waktu saat ini: {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </p>
                   </div>
                 )}
 
                 {c.timezoneMode === 'manual' && (
-                  <div className="space-y-3">
-                    <p className="text-[10px] text-zinc-500">
+                  <div className="space-y-4">
+                    <p className="text-xs text-zinc-500">
                       Atur koreksi waktu secara manual (tambah/kurangi jam, menit, detik dari waktu perangkat)
                     </p>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-3">
                       {/* Hours */}
-                      <div className="space-y-1">
-                        <Label className="text-[10px] text-zinc-500">Jam</Label>
-                        <div className="flex items-center gap-1">
+                      <div className="space-y-2">
+                        <Label className="text-xs text-zinc-500">Jam</Label>
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => updateForm({ timeCorrectionHours: Math.min(c.timeCorrectionHours + 1, 12) })}
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+                            className="ios-haptic-feedback flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-400"
                           >
                             +
                           </button>
@@ -1215,25 +1256,25 @@ function SettingsDashboard() {
                               const v = parseInt(e.target.value) || 0
                               updateForm({ timeCorrectionHours: Math.max(-12, Math.min(12, v)) })
                             }}
-                            className="h-8 bg-zinc-800 border-zinc-700 text-center text-sm text-zinc-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="h-10 bg-zinc-800 border-zinc-700 text-center text-base text-zinc-200 rounded-xl"
                           />
                           <button
                             type="button"
                             onClick={() => updateForm({ timeCorrectionHours: Math.max(c.timeCorrectionHours - 1, -12) })}
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+                            className="ios-haptic-feedback flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-400"
                           >
                             −
                           </button>
                         </div>
                       </div>
                       {/* Minutes */}
-                      <div className="space-y-1">
-                        <Label className="text-[10px] text-zinc-500">Menit</Label>
-                        <div className="flex items-center gap-1">
+                      <div className="space-y-2">
+                        <Label className="text-xs text-zinc-500">Menit</Label>
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => updateForm({ timeCorrectionMinutes: Math.min(c.timeCorrectionMinutes + 1, 59) })}
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+                            className="ios-haptic-feedback flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-400"
                           >
                             +
                           </button>
@@ -1246,25 +1287,25 @@ function SettingsDashboard() {
                               const v = parseInt(e.target.value) || 0
                               updateForm({ timeCorrectionMinutes: Math.max(-59, Math.min(59, v)) })
                             }}
-                            className="h-8 bg-zinc-800 border-zinc-700 text-center text-sm text-zinc-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="h-10 bg-zinc-800 border-zinc-700 text-center text-base text-zinc-200 rounded-xl"
                           />
                           <button
                             type="button"
                             onClick={() => updateForm({ timeCorrectionMinutes: Math.max(c.timeCorrectionMinutes - 1, -59) })}
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+                            className="ios-haptic-feedback flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-400"
                           >
                             −
                           </button>
                         </div>
                       </div>
                       {/* Seconds */}
-                      <div className="space-y-1">
-                        <Label className="text-[10px] text-zinc-500">Detik</Label>
-                        <div className="flex items-center gap-1">
+                      <div className="space-y-2">
+                        <Label className="text-xs text-zinc-500">Detik</Label>
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => updateForm({ timeCorrectionSeconds: Math.min(c.timeCorrectionSeconds + 1, 59) })}
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+                            className="ios-haptic-feedback flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-400"
                           >
                             +
                           </button>
@@ -1277,12 +1318,12 @@ function SettingsDashboard() {
                               const v = parseInt(e.target.value) || 0
                               updateForm({ timeCorrectionSeconds: Math.max(-59, Math.min(59, v)) })
                             }}
-                            className="h-8 bg-zinc-800 border-zinc-700 text-center text-sm text-zinc-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="h-10 bg-zinc-800 border-zinc-700 text-center text-base text-zinc-200 rounded-xl"
                           />
                           <button
                             type="button"
                             onClick={() => updateForm({ timeCorrectionSeconds: Math.max(c.timeCorrectionSeconds - 1, -59) })}
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+                            className="ios-haptic-feedback flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-400"
                           >
                             −
                           </button>
@@ -1290,9 +1331,9 @@ function SettingsDashboard() {
                       </div>
                     </div>
                     {/* Preview corrected time */}
-                    <div className="rounded-lg border border-zinc-800 bg-zinc-800/50 px-3 py-2.5">
-                      <p className="text-[10px] text-zinc-500">Preview waktu setelah koreksi:</p>
-                      <p className="mt-0.5 text-sm font-mono font-bold text-amber-400">
+                    <div className="rounded-xl border border-zinc-800 bg-zinc-800/30 px-4 py-3">
+                      <p className="text-xs text-zinc-500">Preview waktu setelah koreksi:</p>
+                      <p className="mt-1 text-xl font-mono font-bold text-amber-400">
                         {(() => {
                           const now = new Date()
                           const correctionSec = (c.timeCorrectionHours * 3600) + (c.timeCorrectionMinutes * 60) + c.timeCorrectionSeconds
@@ -1301,7 +1342,7 @@ function SettingsDashboard() {
                         })()}
                       </p>
                     </div>
-                    <p className="text-[10px] text-zinc-600">
+                    <p className="text-xs text-zinc-600">
                       Gunakan minus (−) jika waktu perangkat lebih cepat dari waktu sebenarnya
                     </p>
                   </div>
@@ -1310,17 +1351,19 @@ function SettingsDashboard() {
             </AccordionItem>
 
             {/* ─── Section B: Jam Utama ────────────────────────────── */}
-            <AccordionItem value="clock" className="rounded-xl border border-zinc-800 bg-zinc-900 px-4">
-              <AccordionTrigger className="py-4 text-sm font-medium text-zinc-200 hover:no-underline">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-amber-400" />
+            <AccordionItem value="clock" className="rounded-2xl border border-zinc-800 bg-zinc-900/30 backdrop-blur-sm overflow-hidden">
+              <AccordionTrigger className="px-5 py-4 text-base font-semibold text-zinc-200 hover:no-underline">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15">
+                    <Clock className="h-5 w-5 text-emerald-400" />
+                  </div>
                   Jam Utama
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="space-y-4 pb-4">
+              <AccordionContent className="px-5 pb-5 space-y-5">
                 {/* Clock Type */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-400">Tipe Jam</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-zinc-400">Tipe Jam</Label>
                   <ButtonGroup
                     options={[
                       { value: 'digital', label: 'Digital' },
@@ -1334,8 +1377,8 @@ function SettingsDashboard() {
                 {c.clockType === 'digital' ? (
                   <>
                     {/* Digital Clock Style */}
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-400">Gaya Jam Digital</Label>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-zinc-400">Gaya Jam Digital</Label>
                       <ButtonGroup
                         options={[
                           { value: 'default', label: 'Default' },
@@ -1348,16 +1391,16 @@ function SettingsDashboard() {
                     </div>
 
                     {/* Digital Font */}
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-400">Font Jam Digital</Label>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-zinc-400">Font Jam Digital</Label>
                       <Select
                         value={c.digitalFontFamily}
                         onValueChange={(v) => updateForm({ digitalFontFamily: v })}
                       >
-                        <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 text-sm text-zinc-200">
+                        <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 rounded-xl h-12 text-zinc-200">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="border-zinc-800 bg-zinc-900">
+                        <SelectContent className="border-zinc-800 bg-zinc-900 rounded-xl">
                           {FONT_OPTIONS_DIGITAL.map((f) => (
                             <SelectItem key={f.value} value={f.value} className="text-zinc-300">
                               {f.label}
@@ -1381,8 +1424,8 @@ function SettingsDashboard() {
                 ) : (
                   <>
                     {/* Analog Number Style */}
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-400">Gaya Angka Analog</Label>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-zinc-400">Gaya Angka Analog</Label>
                       <ButtonGroup
                         options={[
                           { value: 'arabic', label: 'Arab' },
@@ -1399,18 +1442,18 @@ function SettingsDashboard() {
                     </div>
 
                     {/* Analog Size */}
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-400">Ukuran Analog</Label>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-zinc-400">Ukuran Analog</Label>
                       <div className="flex flex-wrap gap-2">
                         {ANALOG_SIZE_OPTIONS.map((s) => (
                           <button
                             key={s.value}
                             type="button"
                             onClick={() => updateForm({ analogSize: s.value })}
-                            className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
+                            className={`ios-haptic-feedback rounded-full px-4 py-2 text-sm font-medium transition-all ${
                               c.analogSize === s.value
-                                ? 'border-amber-500 bg-amber-500/20 text-amber-400'
-                                : 'border-zinc-700 bg-zinc-800/50 text-zinc-400 hover:border-zinc-600'
+                                ? 'bg-amber-500 text-black'
+                                : 'bg-zinc-800 text-zinc-400'
                             }`}
                           >
                             {s.label}
@@ -1429,8 +1472,8 @@ function SettingsDashboard() {
                 />
 
                 {/* Clock Animation */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-400">Animasi Jam</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-zinc-400">Animasi Jam</Label>
                   <div className="grid grid-cols-2 gap-2">
                     {[
                       { value: 'none', label: 'Tanpa Animasi' },
@@ -1443,10 +1486,10 @@ function SettingsDashboard() {
                         key={a.value}
                         type="button"
                         onClick={() => updateForm({ clockAnimation: a.value as MasjidConfig['clockAnimation'] })}
-                        className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-all ${
+                        className={`ios-haptic-feedback rounded-xl border px-3 py-2 text-sm transition-all ${
                           (c.clockAnimation || 'none') === a.value
                             ? 'border-amber-500 bg-amber-500/10 text-amber-400'
-                            : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
+                            : 'border-zinc-700 bg-zinc-800/50 text-zinc-500'
                         }`}
                       >
                         {a.label}
@@ -1458,17 +1501,19 @@ function SettingsDashboard() {
             </AccordionItem>
 
             {/* ─── Section C: Jadwal Sholat & Sidebar ──────────────── */}
-            <AccordionItem value="prayer" className="rounded-xl border border-zinc-800 bg-zinc-900 px-4">
-              <AccordionTrigger className="py-4 text-sm font-medium text-zinc-200 hover:no-underline">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-amber-400" />
+            <AccordionItem value="prayer" className="rounded-2xl border border-zinc-800 bg-zinc-900/30 backdrop-blur-sm overflow-hidden">
+              <AccordionTrigger className="px-5 py-4 text-base font-semibold text-zinc-200 hover:no-underline">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/15">
+                    <Clock className="h-5 w-5 text-purple-400" />
+                  </div>
                   Jadwal Sholat & Sidebar
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="space-y-4 pb-4">
+              <AccordionContent className="px-5 pb-5 space-y-5">
                 {/* Source Mode */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-400">Mode Sumber Jadwal</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-zinc-400">Mode Sumber Jadwal</Label>
                   <ButtonGroup
                     options={[
                       { value: 'auto', label: 'Otomatis' },
@@ -1483,17 +1528,17 @@ function SettingsDashboard() {
 
                 {/* Manual Prayer Times */}
                 {c.prayerSourceMode === 'manual' && (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <SectionLabel>Jadwal Sholat Manual</SectionLabel>
-                    <div className="max-h-72 space-y-2 overflow-y-auto">
+                    <div className="max-h-80 space-y-3 overflow-y-auto">
                       {c.prayerTimesTemplate.map((prayer, idx) => (
                         <div
                           key={prayer.id}
-                          className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-800/50 p-2"
+                          className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-800/30 p-3"
                         >
-                          <div className="flex min-w-0 flex-1 flex-col gap-1">
+                          <div className="flex min-w-0 flex-1 flex-col gap-2">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-zinc-500" dir="rtl" style={{ fontFamily: "'Amiri', serif" }}>
+                              <span className="text-sm text-zinc-500 font-arabic" dir="rtl">
                                 {prayer.arabic}
                               </span>
                               <Input
@@ -1501,7 +1546,7 @@ function SettingsDashboard() {
                                 onChange={(e) =>
                                   updatePrayerTime(idx, 'latin', e.target.value)
                                 }
-                                className="h-7 flex-1 border-zinc-700 bg-zinc-900 px-2 text-xs text-zinc-300"
+                                className="h-9 flex-1 border-zinc-700 bg-zinc-900 rounded-lg text-sm text-zinc-300"
                               />
                             </div>
                             <div className="flex items-center gap-2">
@@ -1511,7 +1556,7 @@ function SettingsDashboard() {
                                 onChange={(e) =>
                                   updatePrayerTime(idx, 'time', e.target.value)
                                 }
-                                className="h-7 rounded border border-zinc-700 bg-zinc-900 px-2 text-xs text-zinc-300 [color-scheme:dark]"
+                                className="h-9 rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-300 [color-scheme:dark]"
                               />
                             </div>
                           </div>
@@ -1519,9 +1564,9 @@ function SettingsDashboard() {
                             variant="ghost"
                             size="icon"
                             onClick={() => removePrayerTime(idx)}
-                            className="h-7 w-7 shrink-0 text-zinc-600 hover:text-red-400"
+                            className="h-8 w-8 shrink-0 rounded-lg text-zinc-600 hover:text-red-400"
                           >
-                            <Minus className="h-3 w-3" />
+                            <Minus className="h-4 w-4" />
                           </Button>
                         </div>
                       ))}
@@ -1529,9 +1574,9 @@ function SettingsDashboard() {
                     <Button
                       variant="ghost"
                       onClick={addPrayerTime}
-                      className="w-full border border-dashed border-zinc-700 text-xs text-zinc-500 hover:border-amber-500/50 hover:text-amber-400"
+                      className="w-full rounded-xl border border-dashed border-zinc-700 py-3 text-sm text-zinc-500 hover:border-amber-500/50 hover:text-amber-400"
                     >
-                      <Plus className="h-3 w-3" />
+                      <Plus className="h-4 w-4 mr-1" />
                       Tambah Sholat
                     </Button>
                   </div>
@@ -1551,9 +1596,9 @@ function SettingsDashboard() {
                 <Separator className="bg-zinc-800" />
 
                 {/* Card Color */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-400">Warna Kartu Sholat</Label>
-                  <div className="grid grid-cols-4 gap-2">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-zinc-400">Warna Kartu Sholat</Label>
+                  <div className="grid grid-cols-4 gap-3">
                     {CARD_COLORS.map((cc) => (
                       <button
                         key={cc.label}
@@ -1564,14 +1609,14 @@ function SettingsDashboard() {
                             cardBorderColor: cc.border,
                           })
                         }
-                        className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-[10px] transition-all ${
+                        className={`ios-haptic-feedback flex flex-col items-center gap-2 rounded-xl border p-3 text-xs transition-all ${
                           c.cardBgColor === cc.bg
                             ? 'border-amber-500 bg-amber-500/10 text-amber-400'
-                            : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
+                            : 'border-zinc-700 bg-zinc-800/50 text-zinc-500'
                         }`}
                       >
                         <div
-                          className="h-5 w-5 rounded-full border border-zinc-600"
+                          className="h-6 w-6 rounded-full"
                           style={{ backgroundColor: cc.dot }}
                         />
                         {cc.label}
@@ -1579,19 +1624,20 @@ function SettingsDashboard() {
                     ))}
                   </div>
                 </div>
-
               </AccordionContent>
             </AccordionItem>
 
             {/* ─── Section D: Mode Adhan & Iqomah ──────────────────── */}
-            <AccordionItem value="adhan" className="rounded-xl border border-zinc-800 bg-zinc-900 px-4">
-              <AccordionTrigger className="py-4 text-sm font-medium text-zinc-200 hover:no-underline">
-                <div className="flex items-center gap-2">
-                  <Volume2 className="h-4 w-4 text-amber-400" />
+            <AccordionItem value="adhan" className="rounded-2xl border border-zinc-800 bg-zinc-900/30 backdrop-blur-sm overflow-hidden">
+              <AccordionTrigger className="px-5 py-4 text-base font-semibold text-zinc-200 hover:no-underline">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/15">
+                    <Volume2 className="h-5 w-5 text-rose-400" />
+                  </div>
                   Mode Adhan & Iqomah
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="space-y-4 pb-4">
+              <AccordionContent className="px-5 pb-5 space-y-5">
                 {/* Info banner: 5 main prayers only */}
                 <InfoBanner>
                   Mode Adhan &amp; Iqomah hanya berlaku untuk sholat 5 waktu (Subuh, Dzuhur, Ashar, Maghrib, Isya). Sholat sunnah seperti Dhuha &amp; Tahajud tidak memicu Adhan/Iqomah.
@@ -1608,8 +1654,8 @@ function SettingsDashboard() {
                 {c.adhanModeEnabled && (
                   <>
                     {/* Adhan Duration */}
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-400">Durasi Adhan</Label>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-zinc-400">Durasi Adhan</Label>
                       <ButtonGroup
                         options={[
                           { value: '120', label: '2 menit' },
@@ -1622,8 +1668,8 @@ function SettingsDashboard() {
                     </div>
 
                     {/* Adhan Countdown Animation */}
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-400">Animasi Hitung Mundur Adhan</Label>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-zinc-400">Animasi Hitung Mundur Adhan</Label>
                       <ButtonGroup
                         options={[
                           { value: 'pulse', label: 'Pulse' },
@@ -1652,16 +1698,16 @@ function SettingsDashboard() {
                 {c.iqomahModeEnabled && (
                   <>
                     {/* Iqomah Font */}
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-400">Font Iqomah</Label>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-zinc-400">Font Iqomah</Label>
                       <Select
                         value={c.iqomahFontFamily}
                         onValueChange={(v) => updateForm({ iqomahFontFamily: v })}
                       >
-                        <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 text-sm text-zinc-200">
+                        <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 rounded-xl h-12 text-zinc-200">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="border-zinc-800 bg-zinc-900">
+                        <SelectContent className="border-zinc-800 bg-zinc-900 rounded-xl">
                           {FONT_OPTIONS_IQOMAH.map((f) => (
                             <SelectItem key={f.value} value={f.value} className="text-zinc-300">
                               {f.label}
@@ -1691,7 +1737,7 @@ function SettingsDashboard() {
                     />
 
                     {/* Iqomah Minutes */}
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <SliderField
                         label="Menit Iqomah (setelah Adhan)"
                         value={c.iqomahMinutes}
@@ -1707,10 +1753,10 @@ function SettingsDashboard() {
                             key={q.value}
                             type="button"
                             onClick={() => updateForm({ iqomahMinutes: q.value })}
-                            className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all ${
+                            className={`ios-haptic-feedback rounded-full px-4 py-2 text-sm font-medium transition-all ${
                               c.iqomahMinutes === q.value
-                                ? 'border-amber-500 bg-amber-500/20 text-amber-400'
-                                : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
+                                ? 'bg-amber-500 text-black'
+                                : 'bg-zinc-800 text-zinc-400'
                             }`}
                           >
                             {q.label}
@@ -1720,8 +1766,8 @@ function SettingsDashboard() {
                     </div>
 
                     {/* Iqomah Countdown Animation */}
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-400">Animasi Hitung Mundur Iqomah</Label>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-zinc-400">Animasi Hitung Mundur Iqomah</Label>
                       <div className="grid grid-cols-2 gap-2">
                         {[
                           { value: 'pulse', label: 'Pulse' },
@@ -1735,13 +1781,13 @@ function SettingsDashboard() {
                             key={a.value}
                             type="button"
                             onClick={() => updateForm({ iqomahCountdownAnimation: a.value as MasjidConfig['iqomahCountdownAnimation'] })}
-                            className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-all ${
+                            className={`ios-haptic-feedback rounded-xl border px-3 py-2 text-sm transition-all ${
                               (c.iqomahCountdownAnimation || 'pulse') === a.value
                                 ? 'border-amber-500 bg-amber-500/10 text-amber-400'
-                                : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
+                                : 'border-zinc-700 bg-zinc-800/50 text-zinc-500'
                             }`}
                           >
-                            {a.value === 'led-jadul' && <span className="text-sm">📺</span>}
+                            {a.value === 'led-jadul' && <span className="text-base mr-1">📺</span>}
                             {a.label}
                           </button>
                         ))}
@@ -1765,21 +1811,21 @@ function SettingsDashboard() {
                   <>
                     <Separator className="bg-zinc-800" />
                     <SectionLabel>Koleksi Hadits & Ayat Al-Quran</SectionLabel>
-                    <p className="text-[11px] text-zinc-500 leading-relaxed">
+                    <p className="text-sm text-zinc-500 leading-relaxed">
                       Hadits dan ayat akan ditampilkan bergantian pada layar shalat (setelah iqomah). Tambahkan koleksi Anda di bawah ini.
                     </p>
 
                     {/* Existing hadith list */}
-                    <div className="space-y-2 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+                    <div className="space-y-3 max-h-96 overflow-y-auto pr-1 custom-scrollbar">
                       {(c.hadithCollection || []).map((item, idx) => (
                         <div
                           key={item.id}
-                          className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 space-y-2"
+                          className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 space-y-3"
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <span
-                                className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                                className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
                                   item.type === 'ayat'
                                     ? 'bg-emerald-500/15 text-emerald-400'
                                     : 'bg-amber-500/15 text-amber-400'
@@ -1787,22 +1833,22 @@ function SettingsDashboard() {
                               >
                                 {item.type === 'ayat' ? 'Ayat' : 'Hadits'}
                               </span>
-                              <span className="text-[10px] text-zinc-500">#{idx + 1}</span>
+                              <span className="text-xs text-zinc-500">#{idx + 1}</span>
                             </div>
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-2">
                               <button
                                 onClick={() => {
                                   const updated = [...(c.hadithCollection || [])]
                                   updated[idx] = { ...updated[idx], active: !updated[idx].active }
                                   updateForm({ hadithCollection: updated })
                                 }}
-                                className={`flex h-6 w-10 items-center rounded-full px-0.5 transition-colors ${
+                                className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full transition-all duration-300 ${
                                   item.active ? 'bg-amber-500' : 'bg-zinc-700'
                                 }`}
                               >
-                                <div
-                                  className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                                    item.active ? 'translate-x-4' : ''
+                                <span
+                                  className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-lg transition-all duration-300 ${
+                                    item.active ? 'translate-x-6' : 'translate-x-1'
                                   }`}
                                 />
                               </button>
@@ -1811,32 +1857,32 @@ function SettingsDashboard() {
                                   const updated = (c.hadithCollection || []).filter((_, i) => i !== idx)
                                   updateForm({ hadithCollection: updated })
                                 }}
-                                className="flex h-6 w-6 items-center justify-center rounded text-zinc-500 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                                className="ios-haptic-feedback flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:bg-red-500/10 hover:text-red-400"
                               >
-                                <Trash2 className="h-3 w-3" />
+                                <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
                           </div>
                           {/* Arabic text */}
-                          <div className="rounded bg-zinc-800/50 px-2.5 py-1.5">
-                            <p className="text-right text-sm leading-relaxed text-zinc-200 font-amiri" dir="rtl">
+                          <div className="rounded-xl bg-zinc-800/50 px-4 py-3">
+                            <p className="text-right text-base leading-relaxed text-zinc-200 font-arabic" dir="rtl">
                               {item.arabic}
                             </p>
                           </div>
                           {/* Meaning */}
-                          <p className="text-xs text-zinc-400 italic pl-3 border-l-2 border-zinc-700">
+                          <p className="text-sm text-zinc-400 italic pl-3 border-l-2 border-zinc-700">
                             {item.meaning}
                           </p>
                           {/* Source */}
-                          <p className="text-[10px] text-zinc-600 font-semibold tracking-wide">
+                          <p className="text-xs text-zinc-600 font-semibold tracking-wide">
                             {item.source}
                           </p>
                         </div>
                       ))}
                       {(c.hadithCollection || []).length === 0 && (
-                        <div className="rounded-lg border border-dashed border-zinc-800 py-6 text-center">
-                          <BookOpen className="mx-auto mb-2 h-6 w-6 text-zinc-600" />
-                          <p className="text-xs text-zinc-500">Belum ada hadits atau ayat</p>
+                        <div className="rounded-xl border border-dashed border-zinc-800 py-8 text-center">
+                          <BookOpen className="mx-auto mb-3 h-10 w-10 text-zinc-600" />
+                          <p className="text-sm text-zinc-500">Belum ada hadits atau ayat</p>
                         </div>
                       )}
                     </div>
@@ -1854,44 +1900,46 @@ function SettingsDashboard() {
                 {/* Preview Buttons */}
                 <Separator className="bg-zinc-800" />
                 <SectionLabel>Preview Tampilan</SectionLabel>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-3">
                   <Button
                     variant="outline"
                     onClick={openPreviewAdhan}
-                    className="w-full border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:border-amber-500/50 hover:text-amber-400 hover:bg-amber-500/10"
+                    className="rounded-xl border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:border-amber-500/50 hover:text-amber-400 h-12"
                   >
-                    <Eye className="mr-1 h-3.5 w-3.5" />
-                    <span className="text-[10px]">Adhan</span>
+                    <Eye className="mr-2 h-4 w-4" />
+                    <span className="text-sm">Adhan</span>
                   </Button>
                   <Button
                     variant="outline"
                     onClick={openPreviewIqomah}
-                    className="w-full border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:border-red-500/50 hover:text-red-400 hover:bg-red-500/10"
+                    className="rounded-xl border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:border-red-500/50 hover:text-red-400 h-12"
                   >
-                    <Eye className="mr-1 h-3.5 w-3.5" />
-                    <span className="text-[10px]">Iqomah</span>
+                    <Eye className="mr-2 h-4 w-4" />
+                    <span className="text-sm">Iqomah</span>
                   </Button>
                   <Button
                     variant="outline"
                     onClick={openPreviewPostIqomah}
-                    className="w-full border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:border-emerald-500/50 hover:text-emerald-400 hover:bg-emerald-500/10"
+                    className="rounded-xl border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:border-emerald-500/50 hover:text-emerald-400 h-12"
                   >
-                    <Eye className="mr-1 h-3.5 w-3.5" />
-                    <span className="text-[10px]">Shalat</span>
+                    <Eye className="mr-2 h-4 w-4" />
+                    <span className="text-sm">Shalat</span>
                   </Button>
                 </div>
               </AccordionContent>
             </AccordionItem>
 
             {/* ─── Section E: Teks Berjalan ─────────────────────────── */}
-            <AccordionItem value="running" className="rounded-xl border border-zinc-800 bg-zinc-900 px-4">
-              <AccordionTrigger className="py-4 text-sm font-medium text-zinc-200 hover:no-underline">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-amber-400" />
+            <AccordionItem value="running" className="rounded-2xl border border-zinc-800 bg-zinc-900/30 backdrop-blur-sm overflow-hidden">
+              <AccordionTrigger className="px-5 py-4 text-base font-semibold text-zinc-200 hover:no-underline">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/15">
+                    <MessageSquare className="h-5 w-5 text-sky-400" />
+                  </div>
                   Teks Berjalan
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="space-y-4 pb-4">
+              <AccordionContent className="px-5 pb-5 space-y-5">
                 {/* Show Running Text */}
                 <ToggleSwitch
                   label="Tampilkan Teks Berjalan"
@@ -1901,8 +1949,8 @@ function SettingsDashboard() {
                 />
 
                 {/* Animation Style */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-400">Gaya Animasi</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-zinc-400">Gaya Animasi</Label>
                   <div className="grid grid-cols-2 gap-2">
                     {[
                       { value: 'scroll-left', label: 'Geser Kiri', icon: '←' },
@@ -1918,13 +1966,13 @@ function SettingsDashboard() {
                             runningAnimation: a.value as MasjidConfig['runningAnimation'],
                           })
                         }
-                        className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-all ${
+                        className={`ios-haptic-feedback rounded-xl border px-3 py-2 text-sm transition-all ${
                           c.runningAnimation === a.value
                             ? 'border-amber-500 bg-amber-500/10 text-amber-400'
-                            : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
+                            : 'border-zinc-700 bg-zinc-800/50 text-zinc-500'
                         }`}
                       >
-                        <span className="text-sm">{a.icon}</span>
+                        <span className="text-base mr-1">{a.icon}</span>
                         {a.label}
                       </button>
                     ))}
@@ -1939,20 +1987,20 @@ function SettingsDashboard() {
                   min={5}
                   max={60}
                   step={1}
-                  unit="s"
+                  unit=" detik"
                 />
 
                 {/* Running Text Font */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-400">Font Teks Berjalan</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-zinc-400">Font Teks Berjalan</Label>
                   <Select
                     value={c.runningFontFamily}
                     onValueChange={(v) => updateForm({ runningFontFamily: v })}
                   >
-                    <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 text-sm text-zinc-200">
+                    <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 rounded-xl h-12 text-zinc-200">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="border-zinc-800 bg-zinc-900">
+                    <SelectContent className="border-zinc-800 bg-zinc-900 rounded-xl">
                       {FONT_OPTIONS_RUNNING.map((f) => (
                         <SelectItem key={f.value} value={f.value} className="text-zinc-300">
                           {f.label}
@@ -1974,12 +2022,12 @@ function SettingsDashboard() {
                 />
 
                 {/* Announcement Text */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-400">Teks Pengumuman</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-zinc-400">Teks Pengumuman</Label>
                   <Textarea
                     value={c.announcement}
                     onChange={(e) => updateForm({ announcement: e.target.value })}
-                    className="min-h-20 resize-none bg-zinc-800 border-zinc-700 text-sm text-zinc-200"
+                    className="min-h-24 resize-none bg-zinc-800 border-zinc-700 rounded-xl text-base text-zinc-200"
                     placeholder="Masukkan teks pengumuman..."
                   />
                 </div>
@@ -1987,14 +2035,16 @@ function SettingsDashboard() {
             </AccordionItem>
 
             {/* ─── Section F: Informasi Pengajian ──────────────────── */}
-            <AccordionItem value="info" className="rounded-xl border border-zinc-800 bg-zinc-900 px-4">
-              <AccordionTrigger className="py-4 text-sm font-medium text-zinc-200 hover:no-underline">
-                <div className="flex items-center gap-2">
-                  <FileImage className="h-4 w-4 text-amber-400" />
+            <AccordionItem value="info" className="rounded-2xl border border-zinc-800 bg-zinc-900/30 backdrop-blur-sm overflow-hidden">
+              <AccordionTrigger className="px-5 py-4 text-base font-semibold text-zinc-200 hover:no-underline">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/15">
+                    <FileImage className="h-5 w-5 text-orange-400" />
+                  </div>
                   Informasi & Pengajian
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="space-y-4 pb-4">
+              <AccordionContent className="px-5 pb-5 space-y-5">
                 <InfoBanner>
                   Tambahkan informasi pengajian, kajian, atau acara masjid. Gambar disimpan di cloud Supabase. Atur jadwal tampil masing-masing informasi.
                 </InfoBanner>
@@ -2012,8 +2062,8 @@ function SettingsDashboard() {
                     <SectionLabel>Pengaturan Tampilan Informasi</SectionLabel>
 
                     {/* Info Title Position */}
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-400">Posisi Judul & Deskripsi</Label>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-zinc-400">Posisi Judul & Deskripsi</Label>
                       <ButtonGroup
                         options={[
                           { value: 'top-left', label: 'Atas Kiri (dalam gambar)' },
@@ -2026,35 +2076,35 @@ function SettingsDashboard() {
                     </div>
 
                     {/* Info Title Font Color */}
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-400">Warna Font Judul</Label>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-zinc-400">Warna Font Judul</Label>
                       <div className="flex items-center gap-3">
                         <input
                           type="color"
                           value={c.infoTitleFontColor || '#ffffff'}
                           onChange={(e) => updateForm({ infoTitleFontColor: e.target.value })}
-                          className="h-8 w-12 cursor-pointer rounded border border-zinc-700 bg-transparent"
+                          className="h-10 w-12 cursor-pointer rounded-xl border border-zinc-700 bg-transparent"
                         />
                         <Input
                           value={c.infoTitleFontColor || '#ffffff'}
                           onChange={(e) => updateForm({ infoTitleFontColor: e.target.value })}
-                          className="flex-1 bg-zinc-800 border-zinc-700 text-xs text-zinc-200 font-mono"
+                          className="flex-1 bg-zinc-800 border-zinc-700 rounded-xl text-sm text-zinc-200 font-mono h-10"
                           maxLength={7}
                         />
                       </div>
                     </div>
 
                     {/* Info Title Font Family */}
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-400">Font Judul</Label>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-zinc-400">Font Judul</Label>
                       <Select
                         value={c.infoTitleFontFamily || "'Amiri', serif"}
                         onValueChange={(v) => updateForm({ infoTitleFontFamily: v })}
                       >
-                        <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 text-sm text-zinc-200">
+                        <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 rounded-xl h-12 text-zinc-200">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="border-zinc-800 bg-zinc-900">
+                        <SelectContent className="border-zinc-800 bg-zinc-900 rounded-xl">
                           {FONT_OPTIONS_RUNNING.map((f) => (
                             <SelectItem key={f.value} value={f.value} className="text-zinc-300">
                               {f.label}
@@ -2076,16 +2126,16 @@ function SettingsDashboard() {
                     />
 
                     {/* Info Description Font Family */}
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-400">Font Deskripsi</Label>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-zinc-400">Font Deskripsi</Label>
                       <Select
                         value={c.infoDescriptionFontFamily || "'Inter', sans-serif"}
                         onValueChange={(v) => updateForm({ infoDescriptionFontFamily: v })}
                       >
-                        <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 text-sm text-zinc-200">
+                        <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 rounded-xl h-12 text-zinc-200">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="border-zinc-800 bg-zinc-900">
+                        <SelectContent className="border-zinc-800 bg-zinc-900 rounded-xl">
                           {FONT_OPTIONS_RUNNING.map((f) => (
                             <SelectItem key={f.value} value={f.value} className="text-zinc-300">
                               {f.label}
@@ -2126,9 +2176,9 @@ function SettingsDashboard() {
                       {c.informationItems.map((item, idx) => (
                         <div
                           key={item.id}
-                          className="space-y-2 rounded-lg border border-zinc-800 bg-zinc-800/50 p-3"
+                          className="space-y-3 rounded-xl border border-zinc-800 bg-zinc-800/30 p-4"
                         >
-                          <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start justify-between gap-3">
                             <ToggleSwitch
                               label={item.title || 'Tanpa Judul'}
                               checked={item.active}
@@ -2138,53 +2188,53 @@ function SettingsDashboard() {
                               variant="ghost"
                               size="icon"
                               onClick={() => removeInformationItem(idx)}
-                              className="h-7 w-7 shrink-0 text-zinc-600 hover:text-red-400"
+                              className="h-8 w-8 shrink-0 rounded-lg text-zinc-600 hover:text-red-400"
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                           <Input
                             value={item.title}
                             onChange={(e) => updateInformationItem(idx, 'title', e.target.value)}
-                            className="h-8 border-zinc-700 bg-zinc-900 text-xs text-zinc-300"
+                            className="h-10 border-zinc-700 bg-zinc-900 rounded-lg text-sm text-zinc-300"
                             placeholder="Judul (contoh: Pengajian Minggu)"
                           />
                           <Textarea
                             value={item.description}
                             onChange={(e) => updateInformationItem(idx, 'description', e.target.value)}
-                            className="min-h-16 resize-none border-zinc-700 bg-zinc-900 text-xs text-zinc-300"
+                            className="min-h-20 resize-none border-zinc-700 bg-zinc-900 rounded-lg text-sm text-zinc-300"
                             placeholder="Keterangan detail..."
                           />
 
                           {/* Image Upload to Supabase */}
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-zinc-500">Gambar (opsional, max 2MB)</Label>
+                          <div className="space-y-2">
+                            <Label className="text-sm text-zinc-500">Gambar (opsional, max 2MB)</Label>
                             {item.imageUrl ? (
-                              <div className="relative">
+                              <div className="relative rounded-xl overflow-hidden">
                                 <img
                                   src={item.imageUrl}
                                   alt={item.title}
-                                  className="h-32 w-full rounded-lg border border-zinc-700 object-cover"
+                                  className="w-full h-36 object-cover"
                                 />
                                 <button
                                   type="button"
                                   onClick={() => handleImageDelete(idx, item.imageFileName)}
-                                  className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500/80 text-white hover:bg-red-500"
+                                  className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-500/80 text-white hover:bg-red-500"
                                 >
-                                  <Trash2 className="h-3 w-3" />
+                                  <Trash2 className="h-4 w-4" />
                                 </button>
                               </div>
                             ) : (
-                              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-700 bg-zinc-900/50 px-4 py-4 transition-colors hover:border-amber-500/50 hover:bg-zinc-800">
+                              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-700 bg-zinc-900/50 py-6 transition-colors hover:border-amber-500/50 hover:bg-zinc-800">
                                 {imageUploading[idx] ? (
                                   <>
-                                    <Loader2 className="h-4 w-4 animate-spin text-amber-400" />
-                                    <span className="text-xs text-amber-400">Mengupload...</span>
+                                    <Loader2 className="h-6 w-6 animate-spin text-amber-400" />
+                                    <span className="text-sm text-amber-400">Mengupload...</span>
                                   </>
                                 ) : (
                                   <>
-                                    <ImageUp className="h-4 w-4 text-zinc-500" />
-                                    <span className="text-xs text-zinc-500">Upload Gambar</span>
+                                    <ImageUp className="h-6 w-6 text-zinc-500" />
+                                    <span className="text-sm text-zinc-500">Upload Gambar</span>
                                   </>
                                 )}
                                 <input
@@ -2202,9 +2252,9 @@ function SettingsDashboard() {
                           </div>
 
                           {/* Schedule Settings */}
-                          <div className="space-y-2 rounded-lg border border-zinc-700/50 bg-zinc-900/50 p-3">
+                          <div className="space-y-3 rounded-xl border border-zinc-700/50 bg-zinc-900/30 p-4">
                             <div className="flex items-center justify-between">
-                              <Label className="text-xs text-zinc-400">Atur Jadwal Tampil</Label>
+                              <Label className="text-sm text-zinc-400">Atur Jadwal Tampil</Label>
                               <ToggleSwitch
                                 label=""
                                 checked={!!item.scheduleEnabled}
@@ -2212,27 +2262,27 @@ function SettingsDashboard() {
                               />
                             </div>
                             {item.scheduleEnabled && (
-                              <div className="space-y-2">
+                              <div className="space-y-3">
                                 <InfoBanner>
                                   Informasi tidak akan tampil saat jam sholat dan iqomah. Setelah iqomah selesai, tampilan akan kembali aktif.
                                 </InfoBanner>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 gap-3">
                                   <div className="space-y-1">
-                                    <Label className="text-[10px] text-zinc-500">Mulai Jam</Label>
+                                    <Label className="text-xs text-zinc-500">Mulai Jam</Label>
                                     <input
                                       type="time"
                                       value={item.displayStartTime || '08:00'}
                                       onChange={(e) => updateInformationItem(idx, 'displayStartTime', e.target.value)}
-                                      className="h-8 w-full rounded border border-zinc-700 bg-zinc-800 px-2 text-xs text-zinc-300 [color-scheme:dark]"
+                                      className="h-10 w-full rounded-xl border border-zinc-700 bg-zinc-800 px-3 text-sm text-zinc-300 [color-scheme:dark]"
                                     />
                                   </div>
                                   <div className="space-y-1">
-                                    <Label className="text-[10px] text-zinc-500">Sampai Jam</Label>
+                                    <Label className="text-xs text-zinc-500">Sampai Jam</Label>
                                     <input
                                       type="time"
                                       value={item.displayEndTime || '17:00'}
                                       onChange={(e) => updateInformationItem(idx, 'displayEndTime', e.target.value)}
-                                      className="h-8 w-full rounded border border-zinc-700 bg-zinc-800 px-2 text-xs text-zinc-300 [color-scheme:dark]"
+                                      className="h-10 w-full rounded-xl border border-zinc-700 bg-zinc-800 px-3 text-sm text-zinc-300 [color-scheme:dark]"
                                     />
                                   </div>
                                 </div>
@@ -2248,9 +2298,9 @@ function SettingsDashboard() {
                 <Button
                   variant="ghost"
                   onClick={addInformationItem}
-                  className="w-full border border-dashed border-zinc-700 text-xs text-zinc-500 hover:border-amber-500/50 hover:text-amber-400"
+                  className="w-full rounded-xl border border-dashed border-zinc-700 py-3 text-sm text-zinc-500 hover:border-amber-500/50 hover:text-amber-400"
                 >
-                  <Plus className="h-3 w-3" />
+                  <Plus className="h-4 w-4 mr-1" />
                   Tambah Informasi
                 </Button>
 
@@ -2260,7 +2310,7 @@ function SettingsDashboard() {
                 <Button
                   variant="outline"
                   onClick={openPreviewInfo}
-                  className="w-full border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:border-emerald-500/50 hover:text-emerald-400 hover:bg-emerald-500/10"
+                  className="w-full rounded-xl border-zinc-700 bg-zinc-800/50 h-12 text-zinc-300 hover:border-emerald-500/50 hover:text-emerald-400"
                 >
                   <Eye className="mr-2 h-4 w-4" />
                   Preview Informasi & Pengajian
@@ -2269,72 +2319,74 @@ function SettingsDashboard() {
             </AccordionItem>
 
             {/* ─── Section G: Tema & Tampilan ──────────────────────── */}
-            <AccordionItem value="theme" className="rounded-xl border border-zinc-800 bg-zinc-900 px-4">
-              <AccordionTrigger className="py-4 text-sm font-medium text-zinc-200 hover:no-underline">
-                <div className="flex items-center gap-2">
-                  <Palette className="h-4 w-4 text-amber-400" />
+            <AccordionItem value="theme" className="rounded-2xl border border-zinc-800 bg-zinc-900/30 backdrop-blur-sm overflow-hidden">
+              <AccordionTrigger className="px-5 py-4 text-base font-semibold text-zinc-200 hover:no-underline">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/15">
+                    <Palette className="h-5 w-5 text-indigo-400" />
+                  </div>
                   Tema & Tampilan
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="space-y-4 pb-4">
+              <AccordionContent className="px-5 pb-5 space-y-5">
                 {/* Theme Selection */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-400">Pilih Tema</Label>
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-zinc-400">Pilih Tema</Label>
                   {/* Dark themes section */}
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Gelap (Dark)</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Gelap (Dark)</p>
                   <div className="grid grid-cols-1 gap-2">
                     {THEME_OPTIONS.filter((t) => !t.isLight && !('layout' in t)).map((t) => (
                       <button
                         key={t.value}
                         type="button"
                         onClick={() => updateForm({ theme: t.value })}
-                        className={`flex items-center gap-3 rounded-lg border p-3 text-left transition-all ${
+                        className={`ios-haptic-feedback flex items-center gap-3 rounded-xl border p-3 transition-all ${
                           c.theme === t.value
-                            ? 'border-amber-500 bg-amber-500/5 ring-1 ring-amber-500/30'
-                            : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600'
+                            ? 'border-amber-500 bg-amber-500/5'
+                            : 'border-zinc-700 bg-zinc-800/30'
                         }`}
                       >
                         <div className="flex gap-1">
                           <div className="h-8 w-8 rounded-lg" style={{ backgroundColor: t.accent }} />
                           <div className="h-8 w-8 rounded-lg" style={{ backgroundColor: t.accentLight, opacity: 0.5 }} />
                         </div>
-                        <span className={`text-sm font-medium ${c.theme === t.value ? 'text-amber-400' : 'text-zinc-300'}`}>
+                        <span className={`flex-1 text-left text-sm font-medium ${c.theme === t.value ? 'text-amber-400' : 'text-zinc-300'}`}>
                           {t.label}
                         </span>
-                        {c.theme === t.value && <ChevronRight className="ml-auto h-4 w-4 text-amber-400" />}
+                        {c.theme === t.value && <Check className="h-5 w-5 text-amber-400" />}
                       </button>
                     ))}
                   </div>
                   {/* Light themes section */}
-                  <p className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Terang (Light)</p>
+                  <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">Terang (Light)</p>
                   <div className="grid grid-cols-1 gap-2">
                     {THEME_OPTIONS.filter((t) => t.isLight && !('layout' in t)).map((t) => (
                       <button
                         key={t.value}
                         type="button"
                         onClick={() => updateForm({ theme: t.value })}
-                        className={`flex items-center gap-3 rounded-lg border p-3 text-left transition-all ${
+                        className={`ios-haptic-feedback flex items-center gap-3 rounded-xl border p-3 transition-all ${
                           c.theme === t.value
-                            ? 'border-amber-500 bg-amber-500/5 ring-1 ring-amber-500/30'
-                            : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600'
+                            ? 'border-amber-500 bg-amber-500/5'
+                            : 'border-zinc-700 bg-zinc-800/30'
                         }`}
                       >
                         <div className="relative flex gap-1 overflow-hidden rounded-lg">
                           <div className="h-8 w-8 rounded-l-lg border border-zinc-600/50" style={{ backgroundColor: t.bg || '#FAFAFA' }} />
                           <div className="h-8 w-4 rounded-r-lg border border-zinc-600/50" style={{ backgroundColor: t.accent }} />
                         </div>
-                        <div className="flex flex-col">
+                        <div className="flex-1">
                           <span className={`text-sm font-medium ${c.theme === t.value ? 'text-amber-400' : 'text-zinc-300'}`}>
                             {t.label}
                           </span>
-                          <span className="text-[9px] text-zinc-500">Tema Terang</span>
+                          <p className="text-xs text-zinc-500">Tema Terang</p>
                         </div>
-                        {c.theme === t.value && <ChevronRight className="ml-auto h-4 w-4 text-amber-400" />}
+                        {c.theme === t.value && <Check className="h-5 w-5 text-amber-400" />}
                       </button>
                     ))}
                   </div>
                   {/* Layout Variant themes section */}
-                  <p className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Tampilan Berbeda (Layout Variant)</p>
+                  <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">Tampilan Berbeda (Layout Variant)</p>
                   <InfoBanner>
                     Tema ini memiliki posisi tata letak yang berbeda, bukan hanya warna. Coba untuk pengalaman tampilan yang baru!
                   </InfoBanner>
@@ -2344,15 +2396,14 @@ function SettingsDashboard() {
                         key={t.value}
                         type="button"
                         onClick={() => updateForm({ theme: t.value as MasjidConfig['theme'] })}
-                        className={`flex items-center gap-3 rounded-lg border p-3 text-left transition-all ${
+                        className={`ios-haptic-feedback flex items-center gap-3 rounded-xl border p-3 transition-all ${
                           c.theme === t.value
-                            ? 'border-amber-500 bg-amber-500/5 ring-1 ring-amber-500/30'
-                            : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600'
+                            ? 'border-amber-500 bg-amber-500/5'
+                            : 'border-zinc-700 bg-zinc-800/30'
                         }`}
                       >
                         {/* Mini layout preview */}
                         <div className="relative flex h-10 w-10 shrink-0 flex-col gap-0.5 overflow-hidden rounded-lg border border-zinc-600/50" style={{ backgroundColor: t.bg || '#111' }}>
-                          {/* Mini layout visualization */}
                           {t.layout === 'nabawi' ? (
                             <>
                               <div className="flex flex-1 gap-px">
@@ -2392,31 +2443,29 @@ function SettingsDashboard() {
                             </>
                           )}
                         </div>
-                        <div className="flex flex-col min-w-0">
+                        <div className="flex-1">
                           <span className={`text-sm font-medium ${c.theme === t.value ? 'text-amber-400' : 'text-zinc-300'}`}>
                             {t.label}
                           </span>
-                          <span className="text-[9px] text-zinc-500 truncate">
-                            {t.description}
-                          </span>
+                          <p className="text-xs text-zinc-500 truncate">{t.description}</p>
                         </div>
-                        {c.theme === t.value && <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-amber-400" />}
+                        {c.theme === t.value && <Check className="h-5 w-5 text-amber-400" />}
                       </button>
                     ))}
                   </div>
                 </div>
 
                 {/* Server Themes (from Theme Designer) */}
-                <div className="mt-3">
-                  <div className="flex items-center justify-between mb-2">
+                <div className="mt-2">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Tema dari Server</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Tema dari Server</p>
                       <Sparkles className="h-3 w-3 text-purple-400" />
                     </div>
                     <button
                       onClick={fetchServerThemes}
                       disabled={loadingThemes}
-                      className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+                      className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
                     >
                       {loadingThemes ? 'Memuat...' : 'Refresh'}
                     </button>
@@ -2425,44 +2474,44 @@ function SettingsDashboard() {
                     Tema buatan superadmin yang tersimpan di server. Klik untuk menerapkan ke perangkat ini.
                   </InfoBanner>
                   {serverThemes.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-zinc-800 py-4 text-center">
-                      <p className="text-xs text-zinc-600">Belum ada tema yang tersedia</p>
-                      <Link href="/superadmin/themes" className="text-[10px] text-purple-400 hover:text-purple-300">
+                    <div className="rounded-xl border border-dashed border-zinc-800 py-6 text-center mt-3">
+                      <p className="text-sm text-zinc-600">Belum ada tema yang tersedia</p>
+                      <Link href="/superadmin/themes" className="text-xs text-purple-400 hover:text-purple-300 mt-1 inline-block">
                         Buat tema di Theme Designer →
                       </Link>
                     </div>
                   ) : (
-                    <div className="mt-2 grid grid-cols-1 gap-2">
+                    <div className="mt-3 grid grid-cols-1 gap-2">
                       {serverThemes.map((t) => (
                         <button
                           key={t.id}
                           type="button"
                           onClick={() => applyServerTheme(t.id)}
-                          className="flex items-center gap-3 rounded-lg border p-3 text-left transition-all border-zinc-700 bg-zinc-800/50 hover:border-purple-500/40 hover:bg-purple-500/5"
+                          className="ios-haptic-feedback flex items-center gap-3 rounded-xl border border-zinc-700 bg-zinc-800/30 p-3 transition-all hover:border-purple-500/40"
                         >
                           <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-zinc-600/50" style={{ background: t.bgType === 'solid' ? t.bgSolidColor : (t.bgGradient || '#111') }}>
                             <div className="absolute bottom-0 left-0 right-0 h-2" style={{ backgroundColor: t.accentGold, opacity: 0.6 }} />
                             <div className="absolute top-1 left-1 h-1 w-1 rounded-full" style={{ backgroundColor: t.accentGold }} />
                           </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-medium text-zinc-300 truncate">{t.name}</span>
-                            <div className="flex items-center gap-1.5">
-                              <Badge className="border-zinc-700 bg-zinc-800 text-[9px] text-zinc-400 px-1.5 py-0">
+                          <div className="flex-1 text-left">
+                            <p className="text-sm font-medium text-zinc-300 truncate">{t.name}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <Badge className="border-zinc-700 bg-zinc-800 text-[10px] text-zinc-400 px-2 py-0">
                                 {t.category}
                               </Badge>
                               {t.layout && t.layout !== 'default' && (
-                                <Badge className="border-purple-500/30 bg-purple-500/10 text-[9px] text-purple-400 px-1.5 py-0">
+                                <Badge className="border-purple-500/30 bg-purple-500/10 text-[10px] text-purple-400 px-2 py-0">
                                   {t.layout}
                                 </Badge>
                               )}
                               {t.isLight && (
-                                <Badge className="border-amber-500/30 bg-amber-500/10 text-[9px] text-amber-400 px-1.5 py-0">
+                                <Badge className="border-amber-500/30 bg-amber-500/10 text-[10px] text-amber-400 px-2 py-0">
                                   light
                                 </Badge>
                               )}
                             </div>
                           </div>
-                          <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-zinc-600" />
+                          <ChevronRight className="h-4 w-4 text-zinc-600" />
                         </button>
                       ))}
                     </div>
@@ -2470,63 +2519,63 @@ function SettingsDashboard() {
                 </div>
 
                 {/* Custom Theme */}
-                <div className="mt-2 space-y-3 rounded-lg border border-zinc-700 bg-zinc-800/30 p-3">
+                <div className="mt-2 space-y-4 rounded-xl border border-zinc-700 bg-zinc-800/30 p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="flex gap-1">
                         <div
-                          className="h-4 w-4 rounded border border-zinc-600"
+                          className="h-5 w-5 rounded border border-zinc-600"
                           style={{ backgroundColor: c.customThemeAccent }}
                         />
                         <div
-                          className="h-4 w-4 rounded border border-zinc-600"
+                          className="h-5 w-5 rounded border border-zinc-600"
                           style={{ backgroundColor: c.customThemeAccentLight, opacity: 0.5 }}
                         />
                       </div>
-                      <span className="text-xs font-medium text-zinc-300">Tema Custom</span>
+                      <span className="text-sm font-medium text-zinc-300">Tema Custom</span>
                     </div>
                     <Button
                       size="sm"
                       variant={c.theme === 'custom' ? 'default' : 'outline'}
                       onClick={() => updateForm({ theme: 'custom' })}
-                      className={c.theme === 'custom' ? 'bg-amber-500 text-black hover:bg-amber-600 h-7 text-xs' : 'h-7 text-xs border-zinc-700 text-zinc-400'}
+                      className={c.theme === 'custom' ? 'bg-amber-500 text-black hover:bg-amber-600 h-9 px-4 rounded-xl text-sm' : 'h-9 px-4 rounded-xl text-sm border-zinc-700 text-zinc-400'}
                     >
                       {c.theme === 'custom' ? 'Aktif' : 'Gunakan'}
                     </Button>
                   </div>
 
                   {c.theme === 'custom' && (
-                    <div className="space-y-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs text-zinc-400">Warna Aksen Utama</Label>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm text-zinc-400">Warna Aksen Utama</Label>
                         <div className="flex items-center gap-3">
                           <input
                             type="color"
                             value={c.customThemeAccent}
                             onChange={(e) => updateForm({ customThemeAccent: e.target.value })}
-                            className="h-8 w-12 cursor-pointer rounded border border-zinc-700 bg-transparent"
+                            className="h-10 w-12 cursor-pointer rounded-xl border border-zinc-700 bg-transparent"
                           />
                           <Input
                             value={c.customThemeAccent}
                             onChange={(e) => updateForm({ customThemeAccent: e.target.value })}
-                            className="flex-1 bg-zinc-800 border-zinc-700 text-xs text-zinc-200 font-mono"
+                            className="flex-1 bg-zinc-800 border-zinc-700 rounded-xl text-sm text-zinc-200 font-mono h-10"
                             maxLength={7}
                           />
                         </div>
                       </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs text-zinc-400">Warna Aksen Terang</Label>
+                      <div className="space-y-2">
+                        <Label className="text-sm text-zinc-400">Warna Aksen Terang</Label>
                         <div className="flex items-center gap-3">
                           <input
                             type="color"
                             value={c.customThemeAccentLight}
                             onChange={(e) => updateForm({ customThemeAccentLight: e.target.value })}
-                            className="h-8 w-12 cursor-pointer rounded border border-zinc-700 bg-transparent"
+                            className="h-10 w-12 cursor-pointer rounded-xl border border-zinc-700 bg-transparent"
                           />
                           <Input
                             value={c.customThemeAccentLight}
                             onChange={(e) => updateForm({ customThemeAccentLight: e.target.value })}
-                            className="flex-1 bg-zinc-800 border-zinc-700 text-xs text-zinc-200 font-mono"
+                            className="flex-1 bg-zinc-800 border-zinc-700 rounded-xl text-sm text-zinc-200 font-mono h-10"
                             maxLength={7}
                           />
                         </div>
@@ -2534,28 +2583,28 @@ function SettingsDashboard() {
 
                       {/* Background Image */}
                       <Separator className="bg-zinc-700/50" />
-                      <div className="space-y-2">
-                        <Label className="text-xs text-zinc-400">Gambar Latar Belakang</Label>
+                      <div className="space-y-3">
+                        <Label className="text-sm text-zinc-400">Gambar Latar Belakang</Label>
                         {c.customBackgroundImage ? (
-                          <div className="relative rounded-lg overflow-hidden border border-zinc-700">
+                          <div className="relative rounded-xl overflow-hidden border border-zinc-700">
                             <img
                               src={c.customBackgroundImage}
                               alt="Background"
-                              className="w-full h-24 object-cover"
+                              className="w-full h-28 object-cover"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                             <button
                               onClick={() => updateForm({ customBackgroundImage: '', customBackgroundOpacity: 30 })}
-                              className="absolute top-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white/70 hover:bg-red-500/80 hover:text-white transition-colors"
+                              className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white/70 hover:bg-red-500/80 hover:text-white"
                             >
-                              <X className="h-3 w-3" />
+                              <X className="h-4 w-4" />
                             </button>
                           </div>
                         ) : (
-                          <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-zinc-700 py-4 text-zinc-500 transition-colors hover:border-amber-500/40 hover:bg-amber-500/5 hover:text-amber-400">
-                            <ImageUp className="h-5 w-5" />
-                            <span className="text-[10px] font-medium">Upload Gambar</span>
-                            <span className="text-[9px] text-zinc-600">JPG, PNG, WebP (maks 2MB)</span>
+                          <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-700 bg-zinc-900/50 py-6 transition-colors hover:border-amber-500/40 hover:bg-zinc-800">
+                            <ImageUp className="h-6 w-6 text-zinc-500" />
+                            <span className="text-sm font-medium text-zinc-500">Upload Gambar</span>
+                            <span className="text-xs text-zinc-600">JPG, PNG, WebP (maks 2MB)</span>
                             <input
                               type="file"
                               accept="image/jpeg,image/png,image/webp"
@@ -2580,7 +2629,6 @@ function SettingsDashboard() {
                                   updateForm({ customBackgroundImage: data.url })
                                   toast.success('Gambar berhasil diupload')
                                 } catch {
-                                  // Convert to base64 as fallback
                                   const reader = new FileReader()
                                   reader.onload = () => {
                                     updateForm({ customBackgroundImage: reader.result as string })
@@ -2599,8 +2647,8 @@ function SettingsDashboard() {
                       {c.customBackgroundImage && (
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <Label className="text-xs text-zinc-400">Opacity Gambar</Label>
-                            <span className="text-xs font-mono text-zinc-500">{c.customBackgroundOpacity || 30}%</span>
+                            <Label className="text-sm text-zinc-400">Opacity Gambar</Label>
+                            <span className="text-sm font-mono text-zinc-500">{c.customBackgroundOpacity || 30}%</span>
                           </div>
                           <Slider
                             value={[c.customBackgroundOpacity || 30]}
@@ -2646,44 +2694,43 @@ function SettingsDashboard() {
         </div>
       </ScrollArea>
 
-      {/* ─── Sticky Save Button ─────────────────────────────────── */}
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-800 bg-zinc-950/95 p-4 backdrop-blur-sm">
-        <div className="mx-auto max-w-lg">
+      {/* ─── iOS Style Sticky Save Button ───────────────────────────── */}
+      <div className="fixed inset-x-0 bottom-0 z-50 bg-gradient-to-t from-zinc-950 via-zinc-950 to-transparent pt-6 pb-4">
+        <div className="mx-auto max-w-lg px-4">
           <Button
             onClick={handleSave}
             disabled={saving || isLoading}
-            className="h-11 w-full bg-gradient-to-r from-amber-600 to-amber-500 text-sm font-semibold text-black hover:from-amber-500 hover:to-amber-400 disabled:opacity-50"
+            className="h-12 w-full rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-semibold text-base shadow-xl active:scale-98 transition-all disabled:opacity-50"
           >
             {saving || isLoading ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
                 Menyimpan...
               </>
             ) : (
               <>
-                <Save className="h-4 w-4" />
+                <Save className="h-5 w-5 mr-2" />
                 {hasUnsavedChanges ? 'Simpan Pengaturan' : 'Pengaturan Tersimpan'}
               </>
             )}
           </Button>
           {hasUnsavedChanges && (
-            <p className="mt-1.5 text-center text-[10px] text-zinc-500">
+            <p className="mt-2 text-center text-xs text-zinc-500">
               Anda memiliki perubahan yang belum disimpan
             </p>
           )}
         </div>
       </div>
 
-      {/* ─── Preview Overlay ────────────────────────────────────── */}
+      {/* ─── Preview Overlay ───────────────────────────────────────── */}
       {showPreview && (
         <div className="fixed inset-0 z-[100] flex flex-col bg-black">
-          {/* Close button bar */}
-          <div className="absolute top-0 left-0 right-0 z-[110] flex items-center justify-between px-4 py-2 bg-black/60 backdrop-blur-sm">
+          <div className="absolute top-0 left-0 right-0 z-[110] flex items-center justify-between px-4 py-3 bg-black/80 backdrop-blur-xl">
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[11px] font-medium text-white/70">Preview Mode</span>
+              <span className="text-sm font-medium text-white/80">Preview Mode</span>
               {previewMode !== 'none' && (
-                <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+                <span className="rounded-full bg-amber-500/20 px-2.5 py-1 text-xs font-medium text-amber-400">
                   {previewMode === 'adhan' ? 'Adhan' : previewMode === 'iqomah' ? 'Iqomah' : previewMode === 'post-iqomah' ? 'Shalat' : 'Informasi'}
                 </span>
               )}
@@ -2692,13 +2739,12 @@ function SettingsDashboard() {
               variant="ghost"
               size="sm"
               onClick={closePreview}
-              className="h-8 gap-1.5 text-white/70 hover:text-white hover:bg-white/10"
+              className="h-8 gap-1.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10"
             >
               <X className="h-4 w-4" />
-              <span className="text-xs">Kembali ke Settings</span>
+              <span className="text-sm">Kembali ke Settings</span>
             </Button>
           </div>
-          {/* Mosque Display */}
           <div className="flex-1">
             <MosqueDisplay />
           </div>
@@ -2723,3 +2769,10 @@ export default function SettingsPanel() {
 
   return <SettingsDashboard />
 }
+
+// Add Check icon since it was missing
+const Check = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+)

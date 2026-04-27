@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       clockType: 'digital',
       clockStyle: 'default',
       digitalFontFamily: "'Orbitron', monospace",
-      digitalFontSize: 6.5,
+      digitalFontSize: 8.5,
       showSeconds: true,
       analogNumberStyle: 'arabic',
       analogSize: 200,
