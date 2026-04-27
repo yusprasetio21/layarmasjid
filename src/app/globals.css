@@ -1840,225 +1840,50 @@ html.no-vars .clock-digital {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
 }
 /* ============================================
-   FIX OVERFLOW HORIZONTAL UNTUK MOBILE SETTINGS
+   ONLY FIX SAVE BUTTON OVERFLOW
    ============================================ */
 
-/* Prevent horizontal scroll di seluruh halaman */
-html, body {
-  overflow-x: hidden !important;
-  max-width: 100% !important;
-  position: relative !important;
-}
-
-/* Container utama settings */
-#__next, main, .settings-container, [class*="SettingsPanel"] {
-  overflow-x: hidden !important;
-  max-width: 100vw !important;
-}
-
-/* Force semua element untuk tidak melebihi viewport */
-* {
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-/* Perbaikan khusus untuk Accordion dan kontennya */
-.accordion-content, [data-state="open"] {
-  overflow-x: hidden !important;
-}
-
-/* Button group - wrap di mobile */
-.flex-wrap {
-  flex-wrap: wrap !important;
-}
-
-/* Untuk button group yang terlalu banyak */
-.gap-2\.5, .gap-2 {
-  gap: 0.5rem !important;
-}
-
-/* Di mobile, button group lebih kecil */
+/* Fix untuk button simpan yang kelebaran */
 @media (max-width: 640px) {
-  .flex-wrap button {
-    flex: 0 0 auto !important;
-    padding-left: 0.75rem !important;
-    padding-right: 0.75rem !important;
-    font-size: 0.8rem !important;
-  }
-  
-  /* Header title lebih kecil di mobile */
-  header h1 {
-    font-size: 1rem !important;
-  }
-  
-  /* Badge ID lebih kecil */
-  header .badge {
-    font-size: 0.65rem !important;
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
-  }
-  
-  /* Padding header lebih kecil */
-  header > div {
-    padding-left: 0.75rem !important;
-    padding-right: 0.75rem !important;
-  }
-  
-  /* Tombol action di header */
-  header button {
-    width: 2rem !important;
-    height: 2rem !important;
-  }
-  
-  /* Sticky save button container */
+  /* Kontainer sticky save button */
   .fixed.bottom-0 {
+    left: 0 !important;
+    right: 0 !important;
     padding-left: 0.75rem !important;
     padding-right: 0.75rem !important;
   }
   
-  /* Scroll area padding */
-  .ios-smooth-scroll > div {
-    padding-left: 0.75rem !important;
-    padding-right: 0.75rem !important;
+  /* Inner container */
+  .fixed.bottom-0 > div {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
   
-  /* Accordion trigger padding lebih kecil */
-  .accordion-trigger {
-    padding-left: 0.75rem !important;
-    padding-right: 0.75rem !important;
-  }
-  
-  /* Accordion content padding */
-  .accordion-content {
-    padding-left: 0.75rem !important;
-    padding-right: 0.75rem !important;
-  }
-  
-  /* Slider field - label dan value di baris berbeda */
-  .slider-field .flex.items-center {
-    flex-wrap: wrap !important;
-    gap: 0.5rem !important;
-  }
-  
-  /* Input group di waktu manual */
-  .grid-cols-3 {
-    gap: 0.5rem !important;
-  }
-  
-  .grid-cols-3 .flex.items-center {
-    gap: 0.25rem !important;
-  }
-  
-  .grid-cols-3 button {
-    width: 2rem !important;
-    height: 2rem !important;
-  }
-  
-  /* Card color grid */
-  .grid-cols-4 {
-    gap: 0.5rem !important;
-  }
-  
-  .grid-cols-4 button {
-    padding: 0.5rem !important;
-  }
-  
-  /* Date color buttons */
-  .flex-wrap.gap-2\.5 button {
-    padding: 0.5rem 0.75rem !important;
-  }
-  
-  /* Toggle switch label lebih kecil */
-  .toggle-switch .text-sm {
-    font-size: 0.85rem !important;
-  }
-  
-  /* Informasi item grid */
-  .information-item .grid-cols-2 {
-    gap: 0.5rem !important;
-  }
-}
-
-/* Untuk layar sangat kecil (max 380px) */
-@media (max-width: 380px) {
-  header h1 {
-    font-size: 0.9rem !important;
-  }
-  
-  .flex-wrap button {
-    padding-left: 0.6rem !important;
-    padding-right: 0.6rem !important;
-    font-size: 0.75rem !important;
-  }
-  
-  .grid-cols-3 .flex.items-center {
-    flex-direction: column !important;
-  }
-  
-  .grid-cols-3 input {
+  /* Button simpan */
+  .fixed.bottom-0 button {
     width: 100% !important;
-    text-align: center !important;
+    min-width: 0 !important;
+    font-size: 0.9rem !important;
+    padding: 0.75rem 1rem !important;
+    white-space: normal !important;
+    word-break: keep-all !important;
   }
   
-  .grid-cols-4 {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-}
-
-/* Pastikan slider tidak overflow */
-.slider-container {
-  width: 100% !important;
-  overflow: visible !important;
-}
-
-[role="slider"] {
-  max-width: 100% !important;
-}
-
-/* Preview overlay di mobile */
-@media (max-width: 640px) {
-  .fixed.inset-0.z-\[100\] .absolute.top-0 {
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
+  /* Icon di button */
+  .fixed.bottom-0 button svg {
+    width: 1rem !important;
+    height: 1rem !important;
+    flex-shrink: 0 !important;
   }
   
-  .fixed.inset-0.z-\[100\] button {
-    padding: 0.5rem !important;
+  /* Text di button */
+  .fixed.bottom-0 button span {
+    font-size: 0.85rem !important;
+    white-space: nowrap !important;
   }
-}
-
-/* Pastikan text tidak overflow */
-.truncate-text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 150px;
-}
-
-@media (max-width: 640px) {
-  .truncate-text {
-    max-width: 100px;
+  
+  /* Pesan "belum disimpan" */
+  .fixed.bottom-0 p {
+    font-size: 0.7rem !important;
   }
-}
-
-/* Force scroll area horizontal hidden */
-[data-radix-scroll-area-viewport] {
-  overflow-x: hidden !important;
-}
-
-/* Hide scrollbar untuk horizontal */
-::-webkit-scrollbar {
-  width: 3px;
-  height: 0px; /* Hide horizontal scrollbar */
-}
-
-/* Fix untuk button group di dalam accordion */
-.accordion-content .flex-wrap {
-  width: 100%;
-}
-
-/* Pastikan gambar informasi tidak overflow */
-.info-panel-fullscreen img {
-  max-width: 100% !important;
-  height: auto !important;
 }
