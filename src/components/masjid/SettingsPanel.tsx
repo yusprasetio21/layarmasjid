@@ -1135,7 +1135,40 @@ function SettingsDashboard({ isDarkMode, onToggleDarkMode }: { isDarkMode: boole
 
   const c = formState
 
-  const bgClass = isDarkMode ? 'bg-zinc-950' : 'bg-gray-50'
+  // ========== TAMBAHKAN INI - AUTO FETCH PRAYER TIMES ==========
+  const { 
+    fetchPrayerTimesAuto, 
+    isFetchingPrayerTimes,
+    prayerSchedule 
+  } = useMasjidStore()
+
+  // Auto-fetch when prayerSourceMode is 'auto'
+  useEffect(() => {
+    if (c.prayerSourceMode === 'auto') {
+      fetchPrayerTimesAuto()
+    }
+  }, [c.prayerSourceMode, fetchPrayerTimesAuto])
+
+  // Refresh at midnight (every day)
+  useEffect(() => {
+    if (c.prayerSourceMode !== 'auto') return
+    
+    const now = new Date()
+    const tomorrow = new Date(now)
+    tomorrow.setDate(now.getDate() + 1)
+    tomorrow.setHours(0, 0, 0, 0)
+    
+    const timeUntilMidnight = tomorrow.getTime() - now.getTime()
+    
+    const midnightTimer = setTimeout(() => {
+      fetchPrayerTimesAuto()
+    }, timeUntilMidnight)
+    
+    return () => clearTimeout(midnightTimer)
+  }, [c.prayerSourceMode, fetchPrayerTimesAuto])
+  // ========== SAMPAI SINI ==========
+
+  const bgClass = isDarkMode ? 'bg-zinc-950' : 'bg-gray-100'
   const headerBgClass = isDarkMode ? 'bg-zinc-950/90' : 'bg-white/90'
   const borderClass = isDarkMode ? 'border-zinc-800' : 'border-gray-300'
   const textClass = isDarkMode ? 'text-zinc-100' : 'text-gray-900'
@@ -1687,6 +1720,24 @@ function SettingsDashboard({ isDarkMode, onToggleDarkMode }: { isDarkMode: boole
                     isDarkMode={isDarkMode}
                   />
                 </div>
+
+                {/* ========== TAMBAHKAN INI - LOADING INDICATOR & INFO ========== */}
+                {c.prayerSourceMode === 'auto' && isFetchingPrayerTimes && (
+                  <div className="flex items-center gap-2 text-xs text-amber-400 mt-2">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Mengambil jadwal sholat dari server...
+                  </div>
+                )}
+
+                {c.prayerSourceMode === 'auto' && prayerSchedule && (
+                  <div className={`mt-2 rounded-xl border ${isDarkMode ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-emerald-500/30 bg-emerald-50'} px-3 py-2`}>
+                    <p className="text-xs text-emerald-400">✓ Jadwal sholat otomatis aktif</p>
+                    <p className="text-[10px] text-zinc-500 mt-1">
+                      {prayerSchedule.date} - {prayerSchedule.hijriDate}
+                    </p>
+                  </div>
+                )}
+                {/* ========== SAMPAI SINI ========== */}
 
                 {c.prayerSourceMode === 'manual' && (
                   <div className="space-y-3">
@@ -2852,15 +2903,12 @@ function SettingsDashboard({ isDarkMode, onToggleDarkMode }: { isDarkMode: boole
       </ScrollArea>
 
       {/* Sticky Save Button */}
-      <div
-        className={`fixed bottom-0 left-0 right-0 z-50 border-t ${borderClass} ${headerBgClass} sticky-header`}
-      >
-        <div className="mx-auto w-full max-w-2xl px-4 pb-5 pt-3">
-          
+      <div className={`fixed inset-x-0 bottom-0 z-50 border-t ${borderClass} ${headerBgClass} p-5 sticky-header`}>
+        <div className="mx-auto max-w-2xl">
           <Button
             onClick={handleSave}
             disabled={saving || isLoading}
-            className="ios-haptic flex items-center justify-center gap-2 h-14 w-full bg-gradient-to-r from-amber-500 to-amber-600 text-base font-semibold text-black rounded-2xl hover:from-amber-400 hover:to-amber-500 disabled:opacity-50"
+            className="ios-haptic h-14 w-full bg-gradient-to-r from-amber-500 to-amber-600 text-base font-semibold text-black rounded-2xl hover:from-amber-400 hover:to-amber-500 disabled:opacity-50"
           >
             {saving || isLoading ? (
               <>
@@ -2874,13 +2922,11 @@ function SettingsDashboard({ isDarkMode, onToggleDarkMode }: { isDarkMode: boole
               </>
             )}
           </Button>
-
           {hasUnsavedChanges && (
             <p className={`mt-2 text-center text-xs ${textSecondaryClass}`}>
               Anda memiliki perubahan yang belum disimpan
             </p>
           )}
-          
         </div>
       </div>
 

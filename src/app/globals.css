@@ -1839,51 +1839,17 @@ html.no-vars .clock-digital {
   border-color: rgba(255, 255, 255, 0.15) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
 }
-/* ============================================
-   ONLY FIX SAVE BUTTON OVERFLOW
-   ============================================ */
-
-/* Fix untuk button simpan yang kelebaran */
+/* Hanya ini yang diperlukan */
 @media (max-width: 640px) {
-  /* Kontainer sticky save button */
-  .fixed.bottom-0 {
-    left: 0 !important;
-    right: 0 !important;
+  .fixed.bottom-0 button {
+    font-size: 0.85rem !important;
     padding-left: 0.75rem !important;
     padding-right: 0.75rem !important;
-  }
-  
-  /* Inner container */
-  .fixed.bottom-0 > div {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
-  
-  /* Button simpan */
-  .fixed.bottom-0 button {
-    width: 100% !important;
-    min-width: 0 !important;
-    font-size: 0.9rem !important;
-    padding: 0.75rem 1rem !important;
-    white-space: normal !important;
-    word-break: keep-all !important;
-  }
-  
-  /* Icon di button */
-  .fixed.bottom-0 button svg {
-    width: 1rem !important;
-    height: 1rem !important;
-    flex-shrink: 0 !important;
-  }
-  
-  /* Text di button */
-  .fixed.bottom-0 button span {
-    font-size: 0.85rem !important;
     white-space: nowrap !important;
   }
   
-  /* Pesan "belum disimpan" */
-  .fixed.bottom-0 p {
-    font-size: 0.7rem !important;
+  .fixed.bottom-0 button svg {
+    width: 1rem !important;
+    height: 1rem !important;
   }
 }
