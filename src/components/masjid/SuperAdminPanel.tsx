@@ -140,8 +140,8 @@ body {
 .btn-icon.warning:hover { color:var(--amber); background:rgba(255,159,10,0.15); }
 .header {
   position:sticky; top:0; z-index:50;
-  padding: 8px 12px;                    /* dirampingkan */
-  padding-top: max(8px, env(safe-area-inset-top)); /* notch aman */
+  padding: 8px 12px;
+  padding-top: max(8px, env(safe-area-inset-top));
   background:rgba(10,10,15,0.75);
   backdrop-filter:blur(40px) saturate(180%);
   -webkit-backdrop-filter:blur(40px) saturate(180%);
@@ -152,7 +152,7 @@ body {
 [data-theme="light"] .header { background:rgba(242,242,247,0.8); }
 .header-left { display:flex; align-items:center; gap:6px; }
 .header-icon {
-  width:28px; height:28px;            /* lebih kecil */
+  width:28px; height:28px;
   background:var(--red-soft);
   border:1px solid rgba(255,59,48,0.25);
   border-radius:8px;
@@ -176,7 +176,7 @@ body {
 .theme-pill:hover { background:var(--glass-hover); color:var(--text-primary); }
 .content {
   flex:1; padding:12px 16px; max-width:480px; margin:0 auto; width:100%;
-  padding-bottom: max(20px, env(safe-area-inset-bottom)); /* aman di bawah */
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
 }
 .stats-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
 .stat-card { padding:16px 14px; }
@@ -228,18 +228,24 @@ body {
 .empty-title { font-size:16px; font-weight:600; margin-bottom:5px; color:var(--text-secondary); }
 .empty-sub { font-size:13px; color:var(--text-tertiary); }
 
-/* ── Bottom Sheet ── */
+/* Bottom Sheet - sekarang 100% lebar, tidak melebihi layar */
 .overlay {
-  position:fixed; inset:0; background:rgba(0,0,0,0.55);
-  backdrop-filter:blur(8px); z-index:100;
-  display:flex; align-items:flex-end; justify-content:center;
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.55);
+  backdrop-filter:blur(8px);
+  z-index:100;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  overflow-x: hidden;                /* mencegah geser horizontal */
   animation:fadeIn 0.2s ease;
 }
 @keyframes fadeIn { from{opacity:0} to{opacity:1} }
 @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
 .sheet {
-  width:100%; max-width:480px;
-  max-height: 80dvh;                  /* lebih aman, 80% tinggi viewport */
+  width: 100%;                       /* penuh selebar layar */
+  max-width: 100%;                   /* tidak terpotong batas 480px */
+  max-height: 75dvh;                 /* lebih pas di mobile + keyboard */
   background:var(--sheet-bg);
   backdrop-filter:blur(60px) saturate(200%);
   -webkit-backdrop-filter:blur(60px) saturate(200%);
@@ -247,7 +253,10 @@ body {
   border-bottom:none;
   border-radius:26px 26px 0 0;
   animation:slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
-  display:flex; flex-direction:column; overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  overflow: hidden;                  /* tidak ada scroll horizontal */
+  box-sizing: border-box;
 }
 .sheet-handle-wrap { padding:10px 24px 0; flex-shrink:0; }
 .sheet-handle { width:36px; height:4px; background:rgba(128,128,128,0.3); border-radius:2px; margin:0 auto 16px; }
@@ -255,23 +264,33 @@ body {
 .sheet-title { font-size:19px; font-weight:700; letter-spacing:-0.4px; margin-bottom:3px; }
 .sheet-sub { font-size:13px; color:var(--text-secondary); }
 .sheet-body {
-  flex:1; overflow-y:auto; padding:18px 24px;
+  flex:1;
+  overflow-y:auto;
+  padding:18px 24px;
   -webkit-overflow-scrolling:touch;
 }
 .sheet-footer {
-  padding:14px 24px 24px;           /* extra bottom */
+  padding:14px 24px 24px;
   padding-bottom: max(14px, env(safe-area-inset-bottom));
-  flex-shrink:0; border-top:1px solid var(--divider);
-  display:flex; gap:8px;
+  flex-shrink:0;
+  border-top:1px solid var(--divider);
+  display:flex;
+  gap:8px;
 }
 .sheet-footer .btn-ghost { flex:1; justify-content:center; }
-.sheet-footer .btn-red, .sheet-footer .btn-amber, .sheet-footer .btn-destructive { flex:2; }
+.sheet-footer .btn-red,
+.sheet-footer .btn-amber,
+.sheet-footer .btn-destructive { flex:2; min-width:0; } /* min-width:0 agar tombol bisa mengecil */
 
 .ids-input-list { display:flex; flex-direction:column; gap:8px; margin-bottom:8px; }
 .id-input-row { display:flex; align-items:center; gap:8px; }
 .id-input-row .input-field {
-  flex:1; font-variant-numeric:tabular-nums;
-  letter-spacing:3px; font-size:18px; font-weight:700; text-align:center;
+  flex:1;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:3px;
+  font-size:18px;
+  font-weight:700;
+  text-align:center;
 }
 .id-remove-btn {
   width:32px; height:32px; border-radius:8px; flex-shrink:0;
@@ -296,7 +315,9 @@ body {
 @keyframes spin { to{transform:rotate(360deg)} }
 `
 
-// ─── Login ────────────────────────────────────────────────────────────
+// ─── Login, Sheet, Dashboard, Main (sama seperti sebelumnya, hanya modifikasi kecil di tombol footer) ───
+// (Potongan komponen tetap sama, hanya ubah teks tombol footer saat Create)
+
 function Login({ onLogin }: { onLogin: (t: string) => void }) {
   const [u, setU] = useState('')
   const [p, setP] = useState('')
@@ -316,7 +337,6 @@ function Login({ onLogin }: { onLogin: (t: string) => void }) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Login gagal')
-      // Simpan token ke localStorage
       localStorage.setItem('sa-token', data.token)
       onLogin(data.token)
     } catch (e: unknown) {
@@ -352,7 +372,6 @@ function Login({ onLogin }: { onLogin: (t: string) => void }) {
   )
 }
 
-// ─── Sheet ────────────────────────────────────────────────────────────
 function Sheet({ onClose, title, sub, footer, children }: {
   onClose: () => void
   title: React.ReactNode
@@ -375,7 +394,6 @@ function Sheet({ onClose, title, sub, footer, children }: {
   )
 }
 
-// ─── Dashboard ────────────────────────────────────────────────────────
 function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
   const [screens, setScreens] = useState<ScreenInfo[]>([])
   const [loading, setLoading] = useState(true)
@@ -395,7 +413,6 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const [fErr, setFErr] = useState('')
   const [fLoading, setFLoading] = useState(false)
 
-  // theme
   useEffect(() => {
     const saved = localStorage.getItem('sa-theme') as 'dark' | 'light' | null
     if (saved) {
@@ -418,20 +435,15 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch('/api/superadmin', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const res = await fetch('/api/superadmin', { headers: { Authorization: `Bearer ${token}` } })
       if (res.status === 401) {
-        // token expired / invalid
         localStorage.removeItem('sa-token')
         onLogout()
         return
       }
       const data = await res.json()
       if (res.ok) setScreens(data.screens)
-    } catch (e) {
-      console.error(e)
-    }
+    } catch (e) { console.error(e) }
   }, [token, onLogout])
 
   useEffect(() => { load().finally(() => setLoading(false)) }, [load])
@@ -468,9 +480,8 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
       setCreateOpen(false)
       setFIds(['']); setFPw(''); setFOwner(''); setFMosque('')
       await load()
-    } catch (e: unknown) {
-      setFErr(e instanceof Error ? e.message : 'Gagal')
-    } finally { setFLoading(false) }
+    } catch (e: unknown) { setFErr(e instanceof Error ? e.message : 'Gagal') }
+    finally { setFLoading(false) }
   }
 
   const handleChangePw = async () => {
@@ -487,24 +498,19 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
       if (!res.ok) throw new Error(data.error)
       setPwOpen(false); setFPw('')
       await load()
-    } catch (e: unknown) {
-      setFErr(e instanceof Error ? e.message : 'Gagal')
-    } finally { setFLoading(false) }
+    } catch (e: unknown) { setFErr(e instanceof Error ? e.message : 'Gagal') }
+    finally { setFLoading(false) }
   }
 
   const handleDelete = async () => {
     setFLoading(true)
     try {
-      const res = await fetch(`/api/superadmin?id=${activeScreen?.id}`, {
-        method: 'DELETE',
-        headers: headers()
-      })
+      const res = await fetch(`/api/superadmin?id=${activeScreen?.id}`, { method: 'DELETE', headers: headers() })
       if (!res.ok) throw new Error('Gagal menghapus')
       setDeleteOpen(false)
       await load()
-    } catch (e) {
-      console.error(e)
-    } finally { setFLoading(false) }
+    } catch (e) { console.error(e) }
+    finally { setFLoading(false) }
   }
 
   const openCreate = () => {
@@ -515,7 +521,6 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
 
   const fmt = (d: string) => new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
 
-  // Logout handler: hapus token dari localStorage
   const handleLogout = () => {
     localStorage.removeItem('sa-token')
     onLogout()
@@ -528,9 +533,11 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     </div>
   )
 
+  // ringkasan jumlah ID yang valid untuk tombol
+  const validIdsCount = fIds.filter(id => /^\d{4}$/.test(id)).length
+
   return (
     <div className="screen">
-      {/* Header */}
       <div className="header">
         <div className="header-left">
           <div className="header-icon">🛡️</div>
@@ -554,7 +561,6 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
         </div>
       </div>
 
-      {/* Content */}
       <div className="content">
         <div className="stats-row">
           <div className="glass stat-card">
@@ -609,7 +615,6 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
         )}
       </div>
 
-      {/* Sheet Create */}
       {createOpen && (
         <Sheet
           onClose={() => setCreateOpen(false)}
@@ -619,7 +624,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
             <>
               <button className="btn btn-ghost" onClick={() => setCreateOpen(false)}>Batal</button>
               <button className="btn btn-red" onClick={handleCreate} disabled={fLoading}>
-                {fLoading ? <><span className="spinner" />Membuat...</> : `Buat ${fIds.filter(id => /^\d{4}$/.test(id)).length > 1 ? `${fIds.filter(id => /^\d{4}$/.test(id)).length} Perangkat` : 'Perangkat'}`}
+                {fLoading ? <><span className="spinner" />Membuat...</> : `Buat${validIdsCount > 1 ? ` (${validIdsCount})` : ''}`}
               </button>
             </>
           }
@@ -652,7 +657,6 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
         </Sheet>
       )}
 
-      {/* Sheet Change PW */}
       {pwOpen && (
         <Sheet
           onClose={() => setPwOpen(false)}
@@ -675,7 +679,6 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
         </Sheet>
       )}
 
-      {/* Sheet Delete */}
       {deleteOpen && (
         <Sheet
           onClose={() => setDeleteOpen(false)}
@@ -697,16 +700,12 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   )
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────
 export default function SuperAdminPanel() {
   const [token, setToken] = useState<string | null>(null)
 
-  // Cek localStorage saat pertama mount
   useEffect(() => {
     const savedToken = localStorage.getItem('sa-token')
-    if (savedToken) {
-      setToken(savedToken)
-    }
+    if (savedToken) setToken(savedToken)
   }, [])
 
   const handleLogout = () => {
