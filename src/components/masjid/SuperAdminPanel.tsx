@@ -273,7 +273,6 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     <div className="screen">
       <div className="header">
         <div className="header-left">
-          <div className="header-icon">🛡️</div>
           <span className="header-title">Superadmin</span>
           <span className="badge badge-red">Owner</span>
         </div>
