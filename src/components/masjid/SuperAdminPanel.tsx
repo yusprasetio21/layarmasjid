@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 
@@ -14,307 +13,287 @@ interface ScreenInfo {
 }
 
 const styles = `
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root {
+  --glass: rgba(255,255,255,0.08);
+  --glass-border: rgba(255,255,255,0.14);
+  --glass-hover: rgba(255,255,255,0.13);
+  --red: #ff3b30;
+  --red-soft: rgba(255,59,48,0.18);
+  --amber: #ff9f0a;
+  --green: #30d158;
+  --green-soft: rgba(48,209,88,0.18);
+  --text-primary: rgba(255,255,255,0.95);
+  --text-secondary: rgba(255,255,255,0.55);
+  --text-tertiary: rgba(255,255,255,0.3);
+  --bg: #0a0a0f;
+  --divider: rgba(255,255,255,0.08);
+  --input-bg: rgba(255,255,255,0.07);
+  --input-border: rgba(255,255,255,0.12);
+  --sheet-bg: rgba(20,20,28,0.97);
+}
+[data-theme="light"] {
+  --glass: rgba(0,0,0,0.04);
+  --glass-border: rgba(0,0,0,0.08);
+  --glass-hover: rgba(0,0,0,0.07);
+  --red: #ff3b30;
+  --red-soft: rgba(255,59,48,0.1);
+  --amber: #c07800;
+  --green: #1a9e3f;
+  --green-soft: rgba(26,158,63,0.12);
+  --text-primary: rgba(0,0,0,0.88);
+  --text-secondary: rgba(0,0,0,0.5);
+  --text-tertiary: rgba(0,0,0,0.3);
+  --bg: #f2f2f7;
+  --divider: rgba(0,0,0,0.08);
+  --input-bg: rgba(0,0,0,0.04);
+  --input-border: rgba(0,0,0,0.1);
+  --sheet-bg: rgba(242,242,247,0.98);
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.3s, color 0.3s;
+}
+.bg-mesh {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 60% 50% at 20% 20%, rgba(255,59,48,0.07) 0%, transparent 60%),
+              radial-gradient(ellipse 50% 60% at 80% 80%, rgba(10,132,255,0.05) 0%, transparent 60%);
+  transition: opacity 0.3s;
+}
+[data-theme="light"] .bg-mesh { opacity: 0.4; }
+.screen { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; }
+.glass {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-radius: 20px;
+}
+.login-wrap { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:24px; }
+.login-card { width:100%; max-width:360px; padding:36px 24px 28px; }
+.login-icon {
+  width:68px; height:68px; border-radius:20px;
+  background: linear-gradient(135deg,rgba(255,59,48,0.25),rgba(255,59,48,0.08));
+  border:1px solid rgba(255,59,48,0.25);
+  display:flex; align-items:center; justify-content:center;
+  margin:0 auto 20px; font-size:28px;
+}
+.login-title { font-size:24px; font-weight:700; text-align:center; letter-spacing:-0.5px; margin-bottom:6px; }
+.login-sub { font-size:13px; color:var(--text-secondary); text-align:center; margin-bottom:28px; }
+.input-wrap { margin-bottom:12px; }
+.input-label {
+  font-size:11px; font-weight:600; color:var(--text-secondary);
+  letter-spacing:0.4px; text-transform:uppercase; margin-bottom:7px; display:block;
+}
+.input-field {
+  width:100%; background:var(--input-bg); border:1px solid var(--input-border);
+  border-radius:12px; padding:12px 14px; font-size:15px; color:var(--text-primary);
+  outline:none; transition:border-color 0.2s, background 0.2s; font-family:inherit;
+}
+.input-field::placeholder { color:var(--text-tertiary); }
+.input-field:focus { border-color:rgba(255,59,48,0.5); background:var(--input-bg); }
+.input-pw-wrap { position:relative; }
+.input-pw-wrap .input-field { padding-right:46px; }
+.pw-toggle {
+  position:absolute; right:12px; top:50%; transform:translateY(-50%);
+  background:none; border:none; color:var(--text-tertiary);
+  cursor:pointer; font-size:17px; padding:4px; transition:color 0.2s;
+}
+.error-box {
+  background:rgba(255,59,48,0.1); border:1px solid rgba(255,59,48,0.2);
+  border-radius:10px; padding:10px 14px; font-size:13px; color:#ff6961;
+  text-align:center; margin-bottom:14px;
+}
+.btn {
+  display:flex; align-items:center; justify-content:center; gap:7px;
+  border:none; border-radius:13px; font-family:inherit; font-weight:600;
+  cursor:pointer; transition:all 0.18s; letter-spacing:-0.1px; font-size:15px;
+}
+.btn:active { transform:scale(0.97); }
+.btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+.btn-red { background:var(--red); color:#fff; padding:13px 18px; width:100%; box-shadow:0 4px 16px rgba(255,59,48,0.25); }
+.btn-ghost {
+  background:var(--glass); border:1px solid var(--glass-border);
+  color:var(--text-secondary); padding:10px 14px;
+  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+}
+.btn-ghost:hover:not(:disabled) { background:var(--glass-hover); color:var(--text-primary); }
+.btn-amber { background:var(--amber); color:#fff; padding:13px 18px; width:100%; }
+.btn-destructive {
+  background:var(--red-soft); border:1px solid rgba(255,59,48,0.25);
+  color:var(--red); padding:13px 18px; width:100%;
+}
+.btn-icon {
+  width:34px; height:34px; border-radius:9px;
+  background:var(--glass); border:1px solid var(--glass-border);
+  color:var(--text-tertiary); font-size:15px; flex-shrink:0; transition:all 0.2s;
+}
+.btn-icon:hover { color:var(--text-primary); background:var(--glass-hover); }
+.btn-icon.danger:hover { color:var(--red); background:var(--red-soft); }
+.btn-icon.warning:hover { color:var(--amber); background:rgba(255,159,10,0.15); }
+.header {
+  position:sticky; top:0; z-index:50;
+  padding: 8px 12px;                    /* dirampingkan */
+  padding-top: max(8px, env(safe-area-inset-top)); /* notch aman */
+  background:rgba(10,10,15,0.75);
+  backdrop-filter:blur(40px) saturate(180%);
+  -webkit-backdrop-filter:blur(40px) saturate(180%);
+  border-bottom:1px solid var(--divider);
+  display:flex; align-items:center; justify-content:space-between;
+  transition:background 0.3s;
+}
+[data-theme="light"] .header { background:rgba(242,242,247,0.8); }
+.header-left { display:flex; align-items:center; gap:6px; }
+.header-icon {
+  width:28px; height:28px;            /* lebih kecil */
+  background:var(--red-soft);
+  border:1px solid rgba(255,59,48,0.25);
+  border-radius:8px;
+  display:flex; align-items:center; justify-content:center; font-size:14px;
+}
+.header-title { font-size:15px; font-weight:700; letter-spacing:-0.3px; }
+.badge {
+  font-size:10px; font-weight:700; padding:2px 7px;
+  border-radius:20px; letter-spacing:0.3px; text-transform:uppercase;
+}
+.badge-red { background:var(--red-soft); color:var(--red); border:1px solid rgba(255,59,48,0.2); }
+.badge-green { background:var(--green-soft); color:var(--green); border:1px solid rgba(48,209,88,0.2); }
+.header-actions { display:flex; align-items:center; gap:5px; }
+.theme-pill {
+  display:flex; align-items:center; gap:4px;
+  background:var(--glass); border:1px solid var(--glass-border);
+  border-radius:20px; padding:4px 9px;
+  cursor:pointer; font-size:11px; font-weight:600;
+  color:var(--text-secondary); transition:all 0.2s; white-space:nowrap;
+}
+.theme-pill:hover { background:var(--glass-hover); color:var(--text-primary); }
+.content {
+  flex:1; padding:12px 16px; max-width:480px; margin:0 auto; width:100%;
+  padding-bottom: max(20px, env(safe-area-inset-bottom)); /* aman di bawah */
+}
+.stats-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+.stat-card { padding:16px 14px; }
+.stat-num { font-size:30px; font-weight:700; letter-spacing:-1px; line-height:1; margin-bottom:3px; }
+.stat-label { font-size:11px; color:var(--text-secondary); font-weight:500; }
+.add-btn {
+  width:100%; padding:15px; font-size:15px; border-radius:14px; margin-bottom:20px;
+  background:linear-gradient(135deg,rgba(255,59,48,0.9),rgba(255,59,48,0.7));
+  border:1px solid rgba(255,59,48,0.35);
+  box-shadow:0 6px 24px rgba(255,59,48,0.18), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+.section-header {
+  font-size:12px; font-weight:600; color:var(--text-secondary);
+  text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;
+}
+.device-card { padding:16px; margin-bottom:10px; transition:all 0.2s; }
+.device-card:active { transform:scale(0.99); }
+.device-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:10px; }
+.device-id-row { display:flex; align-items:center; gap:8px; }
+.device-id-badge { font-size:20px; font-weight:800; letter-spacing:-0.5px; font-variant-numeric:tabular-nums; }
+.device-actions { display:flex; gap:5px; }
+.device-info { margin-bottom:10px; }
+.device-info-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+.device-info-label { font-size:11px; color:var(--text-tertiary); font-weight:500; min-width:48px; }
+.device-info-val { font-size:13px; color:var(--text-primary); font-weight:500; }
+.pw-row {
+  display:flex; align-items:center; gap:8px;
+  background:var(--input-bg); border:1px solid var(--input-border);
+  border-radius:10px; padding:9px 12px; margin-bottom:10px;
+}
+.pw-label { font-size:11px; color:var(--text-tertiary); flex:0 0 auto; }
+.pw-val { font-size:13px; font-family:'SF Mono',monospace; color:var(--text-secondary); flex:1; }
+.copy-btn {
+  background:none; border:none; color:var(--text-tertiary);
+  cursor:pointer; font-size:14px; padding:2px; transition:color 0.2s;
+}
+.copy-btn:hover { color:var(--text-primary); }
+.copy-btn.copied { color:var(--green); }
+.ids-row { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.id-chip {
+  background:var(--input-bg); border:1px solid var(--input-border);
+  border-radius:8px; padding:5px 10px; font-size:13px;
+  font-weight:700; font-variant-numeric:tabular-nums;
+  color:var(--text-primary); letter-spacing:1px;
+}
+.device-date { font-size:11px; color:var(--text-tertiary); }
+.empty { text-align:center; padding:50px 20px; }
+.empty-icon { font-size:44px; margin-bottom:14px; opacity:0.3; }
+.empty-title { font-size:16px; font-weight:600; margin-bottom:5px; color:var(--text-secondary); }
+.empty-sub { font-size:13px; color:var(--text-tertiary); }
 
-  :root {
-    --glass: rgba(255,255,255,0.08);
-    --glass-border: rgba(255,255,255,0.14);
-    --glass-hover: rgba(255,255,255,0.13);
-    --red: #ff3b30;
-    --red-soft: rgba(255,59,48,0.18);
-    --amber: #ff9f0a;
-    --green: #30d158;
-    --green-soft: rgba(48,209,88,0.18);
-    --text-primary: rgba(255,255,255,0.95);
-    --text-secondary: rgba(255,255,255,0.55);
-    --text-tertiary: rgba(255,255,255,0.3);
-    --bg: #0a0a0f;
-    --divider: rgba(255,255,255,0.08);
-    --input-bg: rgba(255,255,255,0.07);
-    --input-border: rgba(255,255,255,0.12);
-    --sheet-bg: rgba(20,20,28,0.97);
-  }
+/* ── Bottom Sheet ── */
+.overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.55);
+  backdrop-filter:blur(8px); z-index:100;
+  display:flex; align-items:flex-end; justify-content:center;
+  animation:fadeIn 0.2s ease;
+}
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.sheet {
+  width:100%; max-width:480px;
+  max-height: 80dvh;                  /* lebih aman, 80% tinggi viewport */
+  background:var(--sheet-bg);
+  backdrop-filter:blur(60px) saturate(200%);
+  -webkit-backdrop-filter:blur(60px) saturate(200%);
+  border:1px solid var(--glass-border);
+  border-bottom:none;
+  border-radius:26px 26px 0 0;
+  animation:slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.sheet-handle-wrap { padding:10px 24px 0; flex-shrink:0; }
+.sheet-handle { width:36px; height:4px; background:rgba(128,128,128,0.3); border-radius:2px; margin:0 auto 16px; }
+.sheet-header { padding:0 24px 14px; flex-shrink:0; border-bottom:1px solid var(--divider); }
+.sheet-title { font-size:19px; font-weight:700; letter-spacing:-0.4px; margin-bottom:3px; }
+.sheet-sub { font-size:13px; color:var(--text-secondary); }
+.sheet-body {
+  flex:1; overflow-y:auto; padding:18px 24px;
+  -webkit-overflow-scrolling:touch;
+}
+.sheet-footer {
+  padding:14px 24px 24px;           /* extra bottom */
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+  flex-shrink:0; border-top:1px solid var(--divider);
+  display:flex; gap:8px;
+}
+.sheet-footer .btn-ghost { flex:1; justify-content:center; }
+.sheet-footer .btn-red, .sheet-footer .btn-amber, .sheet-footer .btn-destructive { flex:2; }
 
-  [data-theme="light"] {
-    --glass: rgba(0,0,0,0.04);
-    --glass-border: rgba(0,0,0,0.08);
-    --glass-hover: rgba(0,0,0,0.07);
-    --red: #ff3b30;
-    --red-soft: rgba(255,59,48,0.1);
-    --amber: #c07800;
-    --green: #1a9e3f;
-    --green-soft: rgba(26,158,63,0.12);
-    --text-primary: rgba(0,0,0,0.88);
-    --text-secondary: rgba(0,0,0,0.5);
-    --text-tertiary: rgba(0,0,0,0.3);
-    --bg: #f2f2f7;
-    --divider: rgba(0,0,0,0.08);
-    --input-bg: rgba(0,0,0,0.04);
-    --input-border: rgba(0,0,0,0.1);
-    --sheet-bg: rgba(242,242,247,0.98);
-  }
+.ids-input-list { display:flex; flex-direction:column; gap:8px; margin-bottom:8px; }
+.id-input-row { display:flex; align-items:center; gap:8px; }
+.id-input-row .input-field {
+  flex:1; font-variant-numeric:tabular-nums;
+  letter-spacing:3px; font-size:18px; font-weight:700; text-align:center;
+}
+.id-remove-btn {
+  width:32px; height:32px; border-radius:8px; flex-shrink:0;
+  background:var(--red-soft); border:1px solid rgba(255,59,48,0.2);
+  color:var(--red); font-size:16px; cursor:pointer; transition:all 0.2s;
+  display:flex; align-items:center; justify-content:center;
+}
+.add-id-btn {
+  display:flex; align-items:center; gap:6px; padding:9px 14px;
+  background:var(--glass); border:1px solid var(--glass-border);
+  border-radius:10px; cursor:pointer; font-size:13px; font-weight:600;
+  color:var(--text-secondary); transition:all 0.2s; width:100%;
+  justify-content:center; font-family:inherit;
+}
+.add-id-btn:hover { background:var(--glass-hover); color:var(--text-primary); }
 
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: var(--bg);
-    color: var(--text-primary);
-    min-height: 100vh;
-    overflow-x: hidden;
-    transition: background 0.3s, color 0.3s;
-  }
-
-  .bg-mesh {
-    position: fixed; inset: 0; z-index: 0; pointer-events: none;
-    background:
-      radial-gradient(ellipse 60% 50% at 20% 20%, rgba(255,59,48,0.07) 0%, transparent 60%),
-      radial-gradient(ellipse 50% 60% at 80% 80%, rgba(10,132,255,0.05) 0%, transparent 60%);
-    transition: opacity 0.3s;
-  }
-  [data-theme="light"] .bg-mesh { opacity: 0.4; }
-
-  .screen { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; }
-
-  /* Glass */
-  .glass {
-    background: var(--glass);
-    border: 1px solid var(--glass-border);
-    backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
-    border-radius: 20px;
-  }
-
-  /* Login */
-  .login-wrap { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:24px; }
-  .login-card { width:100%; max-width:360px; padding:36px 24px 28px; }
-  .login-icon {
-    width:68px; height:68px; border-radius:20px;
-    background: linear-gradient(135deg,rgba(255,59,48,0.25),rgba(255,59,48,0.08));
-    border:1px solid rgba(255,59,48,0.25);
-    display:flex; align-items:center; justify-content:center;
-    margin:0 auto 20px; font-size:28px;
-  }
-  .login-title { font-size:24px; font-weight:700; text-align:center; letter-spacing:-0.5px; margin-bottom:6px; }
-  .login-sub { font-size:13px; color:var(--text-secondary); text-align:center; margin-bottom:28px; }
-
-  /* Input */
-  .input-wrap { margin-bottom:12px; }
-  .input-label {
-    font-size:11px; font-weight:600; color:var(--text-secondary);
-    letter-spacing:0.4px; text-transform:uppercase; margin-bottom:7px; display:block;
-  }
-  .input-field {
-    width:100%; background:var(--input-bg); border:1px solid var(--input-border);
-    border-radius:12px; padding:12px 14px; font-size:15px; color:var(--text-primary);
-    outline:none; transition:border-color 0.2s, background 0.2s; font-family:inherit;
-  }
-  .input-field::placeholder { color:var(--text-tertiary); }
-  .input-field:focus { border-color:rgba(255,59,48,0.5); background:var(--input-bg); }
-  .input-pw-wrap { position:relative; }
-  .input-pw-wrap .input-field { padding-right:46px; }
-  .pw-toggle {
-    position:absolute; right:12px; top:50%; transform:translateY(-50%);
-    background:none; border:none; color:var(--text-tertiary); cursor:pointer;
-    font-size:17px; padding:4px; transition:color 0.2s;
-  }
-
-  /* Error */
-  .error-box {
-    background:rgba(255,59,48,0.1); border:1px solid rgba(255,59,48,0.2);
-    border-radius:10px; padding:10px 14px; font-size:13px; color:#ff6961;
-    text-align:center; margin-bottom:14px;
-  }
-
-  /* Buttons */
-  .btn {
-    display:flex; align-items:center; justify-content:center; gap:7px;
-    border:none; border-radius:13px; font-family:inherit; font-weight:600;
-    cursor:pointer; transition:all 0.18s; letter-spacing:-0.1px; font-size:15px;
-  }
-  .btn:active { transform:scale(0.97); }
-  .btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
-
-  .btn-red {
-    background:var(--red); color:#fff; padding:13px 18px; width:100%;
-    box-shadow:0 4px 16px rgba(255,59,48,0.25);
-  }
-  .btn-ghost {
-    background:var(--glass); border:1px solid var(--glass-border);
-    color:var(--text-secondary); padding:10px 14px;
-    backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
-  }
-  .btn-ghost:hover:not(:disabled) { background:var(--glass-hover); color:var(--text-primary); }
-  .btn-amber { background:var(--amber); color:#fff; padding:13px 18px; width:100%; }
-  .btn-destructive {
-    background:var(--red-soft); border:1px solid rgba(255,59,48,0.25);
-    color:var(--red); padding:13px 18px; width:100%;
-  }
-  .btn-icon {
-    width:34px; height:34px; border-radius:9px;
-    background:var(--glass); border:1px solid var(--glass-border);
-    color:var(--text-tertiary); font-size:15px; flex-shrink:0; transition:all 0.2s;
-  }
-  .btn-icon:hover { color:var(--text-primary); background:var(--glass-hover); }
-  .btn-icon.danger:hover { color:var(--red); background:var(--red-soft); }
-  .btn-icon.warning:hover { color:var(--amber); background:rgba(255,159,10,0.15); }
-
-  /* Header */
-  .header {
-    position:sticky; top:0; z-index:50; padding:12px 16px;
-    background:rgba(10,10,15,0.75); backdrop-filter:blur(40px) saturate(180%);
-    -webkit-backdrop-filter:blur(40px) saturate(180%);
-    border-bottom:1px solid var(--divider);
-    display:flex; align-items:center; justify-content:space-between;
-    transition:background 0.3s;
-  }
-  [data-theme="light"] .header { background:rgba(242,242,247,0.8); }
-  .header-left { display:flex; align-items:center; gap:8px; }
-  .header-icon {
-    width:30px; height:30px; background:var(--red-soft);
-    border:1px solid rgba(255,59,48,0.25); border-radius:8px;
-    display:flex; align-items:center; justify-content:center; font-size:14px;
-  }
-  .header-title { font-size:16px; font-weight:700; letter-spacing:-0.3px; }
-  .badge {
-    font-size:10px; font-weight:700; padding:2px 7px;
-    border-radius:20px; letter-spacing:0.3px; text-transform:uppercase;
-  }
-  .badge-red { background:var(--red-soft); color:var(--red); border:1px solid rgba(255,59,48,0.2); }
-  .badge-green { background:var(--green-soft); color:var(--green); border:1px solid rgba(48,209,88,0.2); }
-  .header-actions { display:flex; align-items:center; gap:6px; }
-
-  /* Theme toggle pill */
-  .theme-pill {
-    display:flex; align-items:center; gap:4px;
-    background:var(--glass); border:1px solid var(--glass-border);
-    border-radius:20px; padding:5px 10px; cursor:pointer;
-    font-size:12px; font-weight:600; color:var(--text-secondary);
-    transition:all 0.2s; white-space:nowrap;
-  }
-  .theme-pill:hover { background:var(--glass-hover); color:var(--text-primary); }
-
-  /* Content */
-  .content { flex:1; padding:16px; max-width:480px; margin:0 auto; width:100%; padding-bottom:40px; }
-
-  /* Stats */
-  .stats-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
-  .stat-card { padding:16px 14px; }
-  .stat-num { font-size:30px; font-weight:700; letter-spacing:-1px; line-height:1; margin-bottom:3px; }
-  .stat-label { font-size:11px; color:var(--text-secondary); font-weight:500; }
-
-  /* Add button */
-  .add-btn {
-    width:100%; padding:15px; font-size:15px; border-radius:14px; margin-bottom:20px;
-    background:linear-gradient(135deg,rgba(255,59,48,0.9),rgba(255,59,48,0.7));
-    border:1px solid rgba(255,59,48,0.35);
-    box-shadow:0 6px 24px rgba(255,59,48,0.18), inset 0 1px 0 rgba(255,255,255,0.1);
-  }
-
-  .section-header {
-    font-size:12px; font-weight:600; color:var(--text-secondary);
-    text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;
-  }
-
-  /* Device card */
-  .device-card { padding:16px; margin-bottom:10px; transition:all 0.2s; }
-  .device-card:active { transform:scale(0.99); }
-  .device-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:10px; }
-  .device-id-row { display:flex; align-items:center; gap:8px; }
-  .device-id-badge { font-size:20px; font-weight:800; letter-spacing:-0.5px; font-variant-numeric:tabular-nums; }
-  .device-actions { display:flex; gap:5px; }
-  .device-info { margin-bottom:10px; }
-  .device-info-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
-  .device-info-label { font-size:11px; color:var(--text-tertiary); font-weight:500; min-width:48px; }
-  .device-info-val { font-size:13px; color:var(--text-primary); font-weight:500; }
-
-  .pw-row {
-    display:flex; align-items:center; gap:8px;
-    background:var(--input-bg); border:1px solid var(--input-border);
-    border-radius:10px; padding:9px 12px; margin-bottom:10px;
-  }
-  .pw-label { font-size:11px; color:var(--text-tertiary); flex:0 0 auto; }
-  .pw-val { font-size:13px; font-family:'SF Mono',monospace; color:var(--text-secondary); flex:1; }
-  .copy-btn { background:none; border:none; color:var(--text-tertiary); cursor:pointer; font-size:14px; padding:2px; transition:color 0.2s; }
-  .copy-btn:hover { color:var(--text-primary); }
-  .copy-btn.copied { color:var(--green); }
-
-  /* IDs list in card */
-  .ids-row {
-    display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;
-  }
-  .id-chip {
-    background:var(--input-bg); border:1px solid var(--input-border);
-    border-radius:8px; padding:5px 10px;
-    font-size:13px; font-weight:700; font-variant-numeric:tabular-nums;
-    color:var(--text-primary); letter-spacing:1px;
-  }
-
-  .device-date { font-size:11px; color:var(--text-tertiary); }
-
-  /* Empty */
-  .empty { text-align:center; padding:50px 20px; }
-  .empty-icon { font-size:44px; margin-bottom:14px; opacity:0.3; }
-  .empty-title { font-size:16px; font-weight:600; margin-bottom:5px; color:var(--text-secondary); }
-  .empty-sub { font-size:13px; color:var(--text-tertiary); }
-
-  /* ── Bottom Sheet ── */
-  .overlay {
-    position:fixed; inset:0; background:rgba(0,0,0,0.55);
-    backdrop-filter:blur(8px); z-index:100;
-    display:flex; align-items:flex-end; justify-content:center;
-    animation:fadeIn 0.2s ease;
-  }
-  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-  @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
-
-  .sheet {
-    width:100%; max-width:480px; max-height:85vh;
-    background:var(--sheet-bg);
-    backdrop-filter:blur(60px) saturate(200%);
-    -webkit-backdrop-filter:blur(60px) saturate(200%);
-    border:1px solid var(--glass-border); border-bottom:none;
-    border-radius:26px 26px 0 0;
-    animation:slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
-    display:flex; flex-direction:column; overflow:hidden;
-  }
-  .sheet-handle-wrap { padding:10px 24px 0; flex-shrink:0; }
-  .sheet-handle { width:36px; height:4px; background:rgba(128,128,128,0.3); border-radius:2px; margin:0 auto 16px; }
-  .sheet-header { padding:0 24px 14px; flex-shrink:0; border-bottom:1px solid var(--divider); }
-  .sheet-title { font-size:19px; font-weight:700; letter-spacing:-0.4px; margin-bottom:3px; }
-  .sheet-sub { font-size:13px; color:var(--text-secondary); }
-  .sheet-body { flex:1; overflow-y:auto; padding:18px 24px; -webkit-overflow-scrolling:touch; }
-  .sheet-footer {
-    padding:14px 24px 36px; flex-shrink:0;
-    border-top:1px solid var(--divider); display:flex; gap:8px;
-  }
-  .sheet-footer .btn-ghost { flex:1; justify-content:center; }
-  .sheet-footer .btn-red, .sheet-footer .btn-amber, .sheet-footer .btn-destructive { flex:2; }
-
-  /* Multiple IDs input */
-  .ids-input-list { display:flex; flex-direction:column; gap:8px; margin-bottom:8px; }
-  .id-input-row { display:flex; align-items:center; gap:8px; }
-  .id-input-row .input-field { flex:1; font-variant-numeric:tabular-nums; letter-spacing:3px; font-size:18px; font-weight:700; text-align:center; }
-  .id-remove-btn {
-    width:32px; height:32px; border-radius:8px; flex-shrink:0;
-    background:var(--red-soft); border:1px solid rgba(255,59,48,0.2);
-    color:var(--red); font-size:16px; cursor:pointer; transition:all 0.2s;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .add-id-btn {
-    display:flex; align-items:center; gap:6px; padding:9px 14px;
-    background:var(--glass); border:1px solid var(--glass-border);
-    border-radius:10px; cursor:pointer; font-size:13px; font-weight:600;
-    color:var(--text-secondary); transition:all 0.2s; width:100%;
-    justify-content:center; font-family:inherit;
-  }
-  .add-id-btn:hover { background:var(--glass-hover); color:var(--text-primary); }
-
-  /* Spinner */
-  .spinner {
-    width:15px; height:15px; border:2px solid rgba(255,255,255,0.3);
-    border-top-color:currentColor; border-radius:50%;
-    animation:spin 0.7s linear infinite; flex-shrink:0;
-  }
-  @keyframes spin { to{transform:rotate(360deg)} }
+.spinner {
+  width:15px; height:15px; border:2px solid rgba(255,255,255,0.3);
+  border-top-color:currentColor; border-radius:50%;
+  animation:spin 0.7s linear infinite; flex-shrink:0;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
 `
 
 // ─── Login ────────────────────────────────────────────────────────────
@@ -337,10 +316,14 @@ function Login({ onLogin }: { onLogin: (t: string) => void }) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Login gagal')
+      // Simpan token ke localStorage
+      localStorage.setItem('sa-token', data.token)
       onLogin(data.token)
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : 'Login gagal')
-    } finally { setLoading(false) }
+    } finally {
+      setLoading(false)
+    }
   }, [u, p, onLogin])
 
   return (
@@ -400,24 +383,25 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
 
-  // Modals
   const [createOpen, setCreateOpen] = useState(false)
   const [pwOpen, setPwOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [activeScreen, setActiveScreen] = useState<ScreenInfo | null>(null)
 
-  // Create form
-  const [fIds, setFIds] = useState([''])   // multiple IDs
+  const [fIds, setFIds] = useState([''])
   const [fPw, setFPw] = useState('')
   const [fOwner, setFOwner] = useState('')
   const [fMosque, setFMosque] = useState('')
   const [fErr, setFErr] = useState('')
   const [fLoading, setFLoading] = useState(false)
 
-  // Theme
+  // theme
   useEffect(() => {
     const saved = localStorage.getItem('sa-theme') as 'dark' | 'light' | null
-    if (saved) { setTheme(saved); document.documentElement.setAttribute('data-theme', saved) }
+    if (saved) {
+      setTheme(saved)
+      document.documentElement.setAttribute('data-theme', saved)
+    }
   }, [])
 
   const toggleTheme = () => {
@@ -434,11 +418,21 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch('/api/superadmin', { headers: { Authorization: `Bearer ${token}` } })
+      const res = await fetch('/api/superadmin', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.status === 401) {
+        // token expired / invalid
+        localStorage.removeItem('sa-token')
+        onLogout()
+        return
+      }
       const data = await res.json()
       if (res.ok) setScreens(data.screens)
-    } catch (e) { console.error(e) }
-  }, [token])
+    } catch (e) {
+      console.error(e)
+    }
+  }, [token, onLogout])
 
   useEffect(() => { load().finally(() => setLoading(false)) }, [load])
 
@@ -450,10 +444,10 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  // Multiple IDs handlers
   const addIdField = () => setFIds(prev => [...prev, ''])
   const removeIdField = (i: number) => setFIds(prev => prev.filter((_, idx) => idx !== i))
-  const updateId = (i: number, val: string) => setFIds(prev => prev.map((v, idx) => idx === i ? val.replace(/\D/g, '').slice(0, 4) : v))
+  const updateId = (i: number, val: string) =>
+    setFIds(prev => prev.map((v, idx) => idx === i ? val.replace(/\D/g, '').slice(0, 4) : v))
 
   const handleCreate = async () => {
     setFErr('')
@@ -462,7 +456,6 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     if (!fPw || fPw.length < 4) { setFErr('Password minimal 4 karakter'); return }
     setFLoading(true)
     try {
-      // Create each ID
       for (const id of validIds) {
         const res = await fetch('/api/screens', {
           method: 'POST',
@@ -486,7 +479,8 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     setFLoading(true)
     try {
       const res = await fetch('/api/superadmin', {
-        method: 'PATCH', headers: headers(),
+        method: 'PATCH',
+        headers: headers(),
         body: JSON.stringify({ id: activeScreen?.id, password: fPw }),
       })
       const data = await res.json()
@@ -501,17 +495,31 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const handleDelete = async () => {
     setFLoading(true)
     try {
-      const res = await fetch(`/api/superadmin?id=${activeScreen?.id}`, { method: 'DELETE', headers: headers() })
+      const res = await fetch(`/api/superadmin?id=${activeScreen?.id}`, {
+        method: 'DELETE',
+        headers: headers()
+      })
       if (!res.ok) throw new Error('Gagal menghapus')
-      setDeleteOpen(false); await load()
-    } catch (e) { console.error(e) }
-    finally { setFLoading(false) }
+      setDeleteOpen(false)
+      await load()
+    } catch (e) {
+      console.error(e)
+    } finally { setFLoading(false) }
   }
 
-  const openCreate = () => { setFIds(['']); setFPw(''); setFOwner(''); setFMosque(''); setFErr(''); setCreateOpen(true) }
+  const openCreate = () => {
+    setFIds(['']); setFPw(''); setFOwner(''); setFMosque(''); setFErr(''); setCreateOpen(true)
+  }
   const openPw = (s: ScreenInfo) => { setActiveScreen(s); setFPw(''); setFErr(''); setPwOpen(true) }
   const openDelete = (s: ScreenInfo) => { setActiveScreen(s); setDeleteOpen(true) }
+
   const fmt = (d: string) => new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+
+  // Logout handler: hapus token dari localStorage
+  const handleLogout = () => {
+    localStorage.removeItem('sa-token')
+    onLogout()
+  }
 
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', flexDirection:'column', gap:12 }}>
@@ -530,26 +538,24 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
           <span className="badge badge-red">Owner</span>
         </div>
         <div className="header-actions">
-          {/* Light/Dark toggle */}
           <button className="theme-pill" onClick={toggleTheme}>
             {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
           </button>
           <Link href="/superadmin/themes">
-            <button className="btn btn-ghost" style={{ padding:'7px 11px', fontSize:13 }}>🎨</button>
+            <button className="btn btn-ghost" style={{ padding:'6px 9px', fontSize:12 }}>🎨</button>
           </Link>
-          <button className="btn btn-ghost" style={{ padding:'7px 11px', fontSize:13 }} onClick={refresh} disabled={refreshing}>
+          <button className="btn btn-ghost" style={{ padding:'6px 9px', fontSize:12 }} onClick={refresh} disabled={refreshing}>
             {refreshing ? <span className="spinner" /> : '↻'}
           </button>
           <Link href="/">
-            <button className="btn btn-ghost" style={{ padding:'7px 11px', fontSize:13 }}>📺</button>
+            <button className="btn btn-ghost" style={{ padding:'6px 9px', fontSize:12 }}>📺</button>
           </Link>
-          <button className="btn btn-ghost" style={{ padding:'7px 11px', fontSize:13 }} onClick={onLogout}>↩️</button>
+          <button className="btn btn-ghost" style={{ padding:'6px 9px', fontSize:12 }} onClick={handleLogout}>↩️</button>
         </div>
       </div>
 
       {/* Content */}
       <div className="content">
-        {/* Stats */}
         <div className="stats-row">
           <div className="glass stat-card">
             <div className="stat-num" style={{ color:'var(--red)' }}>{screens.length}</div>
@@ -561,10 +567,8 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
           </div>
         </div>
 
-        {/* Add */}
         <button className="btn add-btn" onClick={openCreate}>＋ Tambah Perangkat</button>
 
-        {/* List */}
         {screens.length === 0 ? (
           <div className="empty">
             <div className="empty-icon">📺</div>
@@ -605,7 +609,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
         )}
       </div>
 
-      {/* ── Sheet: Create ── */}
+      {/* Sheet Create */}
       {createOpen && (
         <Sheet
           onClose={() => setCreateOpen(false)}
@@ -628,29 +632,18 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
             <label className="input-label">Nama Masjid</label>
             <input className="input-field" value={fMosque} onChange={e => setFMosque(e.target.value)} placeholder="Nama masjid" />
           </div>
-
-          {/* Multiple IDs */}
           <div className="input-wrap">
             <label className="input-label">ID Perangkat (4 angka) — bisa lebih dari 1</label>
             <div className="ids-input-list">
               {fIds.map((id, i) => (
                 <div key={i} className="id-input-row">
-                  <input
-                    className="input-field"
-                    value={id}
-                    onChange={e => updateId(i, e.target.value)}
-                    placeholder="1234"
-                    maxLength={4}
-                  />
-                  {fIds.length > 1 && (
-                    <button className="id-remove-btn" onClick={() => removeIdField(i)}>×</button>
-                  )}
+                  <input className="input-field" value={id} onChange={e => updateId(i, e.target.value)} placeholder="1234" maxLength={4} />
+                  {fIds.length > 1 && <button className="id-remove-btn" onClick={() => removeIdField(i)}>×</button>}
                 </div>
               ))}
             </div>
             <button className="add-id-btn" onClick={addIdField}>＋ Tambah ID Layar Lain</button>
           </div>
-
           <div className="input-wrap" style={{ marginBottom: 0 }}>
             <label className="input-label">Password (sama untuk semua layar)</label>
             <input className="input-field" value={fPw} onChange={e => setFPw(e.target.value)} placeholder="Minimal 4 karakter" />
@@ -659,7 +652,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
         </Sheet>
       )}
 
-      {/* ── Sheet: Change PW ── */}
+      {/* Sheet Change PW */}
       {pwOpen && (
         <Sheet
           onClose={() => setPwOpen(false)}
@@ -682,7 +675,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
         </Sheet>
       )}
 
-      {/* ── Sheet: Delete ── */}
+      {/* Sheet Delete */}
       {deleteOpen && (
         <Sheet
           onClose={() => setDeleteOpen(false)}
@@ -707,14 +700,25 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
 // ─── Main ─────────────────────────────────────────────────────────────
 export default function SuperAdminPanel() {
   const [token, setToken] = useState<string | null>(null)
+
+  // Cek localStorage saat pertama mount
+  useEffect(() => {
+    const savedToken = localStorage.getItem('sa-token')
+    if (savedToken) {
+      setToken(savedToken)
+    }
+  }, [])
+
+  const handleLogout = () => {
+    localStorage.removeItem('sa-token')
+    setToken(null)
+  }
+
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: styles }} />
       <div className="bg-mesh" />
-      {!token
-        ? <Login onLogin={setToken} />
-        : <Dashboard token={token} onLogout={() => setToken(null)} />
-      }
+      {!token ? <Login onLogin={setToken} /> : <Dashboard token={token} onLogout={handleLogout} />}
     </>
   )
 }
