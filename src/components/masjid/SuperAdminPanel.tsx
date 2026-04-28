@@ -2,36 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { toast } from 'sonner'
-import {
-  Shield,
-  LogOut,
-  Eye,
-  EyeOff,
-  Loader2,
-  Plus,
-  Trash2,
-  Key,
-  Monitor,
-  Copy,
-  Check,
-  Palette,
-} from 'lucide-react'
 
 // ─── Types ───────────────────────────────────────────────────────────
 interface ScreenInfo {
@@ -44,653 +14,929 @@ interface ScreenInfo {
   updatedAt: string | null
 }
 
-// ─── Login Screen ────────────────────────────────────────────────────
-function SuperAdminLogin({ onLogin }: { onLogin: (token: string) => void }) {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState('')
+// ─── Styles (injected) ───────────────────────────────────────────────
+const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap');
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
+  :root {
+    --glass: rgba(255,255,255,0.08);
+    --glass-border: rgba(255,255,255,0.14);
+    --glass-hover: rgba(255,255,255,0.13);
+    --red: #ff3b30;
+    --red-soft: rgba(255,59,48,0.18);
+    --amber: #ff9f0a;
+    --amber-soft: rgba(255,159,10,0.18);
+    --green: #30d158;
+    --green-soft: rgba(48,209,88,0.18);
+    --blue: #0a84ff;
+    --blue-soft: rgba(10,132,255,0.15);
+    --text-primary: rgba(255,255,255,0.95);
+    --text-secondary: rgba(255,255,255,0.55);
+    --text-tertiary: rgba(255,255,255,0.3);
+    --bg: #0a0a0f;
+    --surface: rgba(255,255,255,0.06);
+    --divider: rgba(255,255,255,0.08);
+    --blur: blur(40px) saturate(180%);
+  }
+
+  body {
+    font-family: -apple-system, 'SF Pro Display', BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background mesh */
+  .bg-mesh {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: 
+      radial-gradient(ellipse 60% 50% at 20% 20%, rgba(255,59,48,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 60% at 80% 80%, rgba(10,132,255,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 50% 50%, rgba(255,159,10,0.04) 0%, transparent 60%);
+  }
+
+  /* Glass card */
+  .glass {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    border-radius: 20px;
+  }
+
+  .glass-sm {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 14px;
+  }
+
+  /* Screen */
+  .screen {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Login ── */
+  .login-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 360px;
+    padding: 36px 28px 32px;
+  }
+
+  .login-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, rgba(255,59,48,0.3), rgba(255,59,48,0.1));
+    border: 1px solid rgba(255,59,48,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    font-size: 30px;
+  }
+
+  .login-title {
+    font-size: 26px;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+
+  .login-sub {
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  /* Input */
+  .input-wrap { margin-bottom: 14px; }
+  .input-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .input-field {
+    width: 100%;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    padding: 13px 16px;
+    font-size: 15px;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    font-family: inherit;
+  }
+
+  .input-field::placeholder { color: var(--text-tertiary); }
+  .input-field:focus {
+    border-color: rgba(255,59,48,0.5);
+    background: rgba(255,255,255,0.1);
+  }
+
+  .input-pw-wrap { position: relative; }
+  .input-pw-wrap .input-field { padding-right: 48px; }
+  .pw-toggle {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px;
+    transition: color 0.2s;
+  }
+  .pw-toggle:hover { color: var(--text-secondary); }
+
+  /* Error */
+  .error-box {
+    background: rgba(255,59,48,0.12);
+    border: 1px solid rgba(255,59,48,0.25);
+    border-radius: 12px;
+    padding: 11px 14px;
+    font-size: 13px;
+    color: #ff6961;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  /* Buttons */
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: none;
+    border-radius: 14px;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: -0.1px;
+  }
+
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .btn-red {
+    background: var(--red);
+    color: #fff;
+    padding: 14px 20px;
+    font-size: 16px;
+    width: 100%;
+    box-shadow: 0 4px 20px rgba(255,59,48,0.3);
+  }
+  .btn-red:hover:not(:disabled) { background: #ff5248; }
+
+  .btn-ghost {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    color: var(--text-secondary);
+    padding: 10px 16px;
+    font-size: 14px;
+    backdrop-filter: blur(20px);
+  }
+  .btn-ghost:hover:not(:disabled) { background: var(--glass-hover); color: var(--text-primary); }
+
+  .btn-amber {
+    background: var(--amber);
+    color: #000;
+    padding: 13px 20px;
+    font-size: 15px;
+    width: 100%;
+  }
+
+  .btn-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    color: var(--text-tertiary);
+    font-size: 16px;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .btn-icon:hover { color: var(--text-primary); background: var(--glass-hover); }
+  .btn-icon.danger:hover { color: var(--red); background: var(--red-soft); }
+  .btn-icon.warning:hover { color: var(--amber); background: var(--amber-soft); }
+
+  /* ── Header ── */
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    padding: 14px 20px 12px;
+    background: rgba(10,10,15,0.7);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border-bottom: 1px solid var(--divider);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .header-icon {
+    width: 32px; height: 32px;
+    background: var(--red-soft);
+    border: 1px solid rgba(255,59,48,0.3);
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+  }
+
+  .header-title {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+  .badge-red { background: var(--red-soft); color: var(--red); border: 1px solid rgba(255,59,48,0.2); }
+  .badge-green { background: var(--green-soft); color: var(--green); border: 1px solid rgba(48,209,88,0.2); }
+
+  .header-actions { display: flex; align-items: center; gap: 8px; }
+
+  /* ── Content ── */
+  .content {
+    flex: 1;
+    padding: 20px;
+    max-width: 480px;
+    margin: 0 auto;
+    width: 100%;
+    padding-bottom: 40px;
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    padding: 18px 16px;
+  }
+
+  .stat-num {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  /* Add button */
+  .add-btn {
+    width: 100%;
+    padding: 16px;
+    font-size: 16px;
+    border-radius: 16px;
+    margin-bottom: 24px;
+    background: linear-gradient(135deg, rgba(255,59,48,0.9), rgba(255,59,48,0.7));
+    border: 1px solid rgba(255,59,48,0.4);
+    box-shadow: 0 8px 32px rgba(255,59,48,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+
+  /* Section header */
+  .section-header {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+
+  /* Device cards */
+  .device-card {
+    padding: 18px;
+    margin-bottom: 12px;
+    transition: all 0.2s;
+  }
+  .device-card:active { transform: scale(0.99); }
+
+  .device-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .device-id-row { display: flex; align-items: center; gap: 10px; }
+
+  .device-id-badge {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .device-actions { display: flex; gap: 6px; }
+
+  .device-info { margin-bottom: 12px; }
+  .device-info-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 5px;
+  }
+  .device-info-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-weight: 500;
+    min-width: 52px;
+  }
+  .device-info-val {
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .pw-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 9px 12px;
+    margin-bottom: 12px;
+  }
+  .pw-label { font-size: 11px; color: var(--text-tertiary); flex: 0 0 auto; }
+  .pw-val { font-size: 13px; font-family: 'SF Mono', monospace; color: var(--text-secondary); flex: 1; }
+  .copy-btn {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px;
+    transition: color 0.2s;
+    flex: 0 0 auto;
+  }
+  .copy-btn:hover { color: var(--text-primary); }
+  .copy-btn.copied { color: var(--green); }
+
+  .device-date {
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  /* Empty state */
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
+  .empty-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary); }
+  .empty-sub { font-size: 14px; color: var(--text-tertiary); }
+
+  /* ── Bottom Sheet Modal ── */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+    display: flex;
+    align-items: flex-end;
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+  .sheet {
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    background: rgba(20,20,28,0.95);
+    backdrop-filter: blur(60px) saturate(200%);
+    -webkit-backdrop-filter: blur(60px) saturate(200%);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-bottom: none;
+    border-radius: 28px 28px 0 0;
+    padding: 12px 24px 40px;
+    animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    margin: 0 auto 24px;
+  }
+
+  .sheet-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+    margin-bottom: 4px;
+  }
+
+  .sheet-sub {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 28px;
+  }
+
+  .sheet-footer {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .sheet-footer .btn-ghost { flex: 1; justify-content: center; }
+  .sheet-footer .btn-red,
+  .sheet-footer .btn-amber { flex: 2; }
+
+  /* Destructive */
+  .btn-destructive {
+    background: var(--red-soft);
+    border: 1px solid rgba(255,59,48,0.3);
+    color: var(--red);
+    padding: 13px 20px;
+    font-size: 15px;
+    width: 100%;
+  }
+
+  /* Spinner */
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Sync dot */
+  .sync-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: pulse 2s infinite;
+    flex-shrink: 0;
+  }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+`
+
+// ─── Login ────────────────────────────────────────────────────────────
+function Login({ onLogin }: { onLogin: (t: string) => void }) {
+  const [u, setU] = useState('')
+  const [p, setP] = useState('')
+  const [show, setShow] = useState(false)
+  const [err, setErr] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const handleLogin = useCallback(async () => {
-    setError('')
-    if (!username || !password) {
-      setError('Username dan password wajib diisi')
-      return
-    }
+  const submit = useCallback(async () => {
+    setErr('')
+    if (!u || !p) { setErr('Username dan password wajib diisi'); return }
     setLoading(true)
     try {
       const res = await fetch('/api/superadmin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username: u, password: p }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Login gagal')
       onLogin(data.token)
-      toast.success('Berhasil masuk sebagai Superadmin')
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Login gagal'
-      setError(msg)
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : 'Login gagal')
     } finally {
       setLoading(false)
     }
-  }, [username, password, onLogin])
+  }, [u, p, onLogin])
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4">
-      <Card className="w-full max-w-sm border-zinc-800 bg-zinc-900">
-        <CardHeader className="items-center text-center">
-          <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/10">
-            <Shield className="h-8 w-8 text-red-400" />
-          </div>
-          <CardTitle className="text-xl text-zinc-100">
-            Superadmin
-          </CardTitle>
-          <CardDescription className="text-zinc-500">
-            Kelola semua perangkat MasjidScreen
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="space-y-2">
-            <Label className="text-xs text-zinc-400">Username</Label>
-            <Input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="admin"
-              className="bg-zinc-800 border-zinc-700 text-sm text-zinc-200 placeholder:text-zinc-600"
-              onKeyDown={(e) => { if (e.key === 'Enter') handleLogin() }}
+    <div className="login-wrap">
+      <div className="glass login-card">
+        <div className="login-icon">🛡️</div>
+        <div className="login-title">Superadmin</div>
+        <div className="login-sub">Kelola semua perangkat MasjidScreen</div>
+
+        <div className="input-wrap">
+          <label className="input-label">Username</label>
+          <input
+            className="input-field"
+            value={u}
+            onChange={e => setU(e.target.value)}
+            placeholder="admin"
+            onKeyDown={e => e.key === 'Enter' && submit()}
+          />
+        </div>
+
+        <div className="input-wrap">
+          <label className="input-label">Password</label>
+          <div className="input-pw-wrap">
+            <input
+              className="input-field"
+              type={show ? 'text' : 'password'}
+              value={p}
+              onChange={e => setP(e.target.value)}
+              placeholder="Password superadmin"
+              onKeyDown={e => e.key === 'Enter' && submit()}
             />
+            <button className="pw-toggle" onClick={() => setShow(!show)}>
+              {show ? '🙈' : '👁️'}
+            </button>
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs text-zinc-400">Password</Label>
-            <div className="relative">
-              <Input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password superadmin"
-                className="bg-zinc-800 border-zinc-700 pr-10 text-zinc-200 placeholder:text-zinc-600"
-                onKeyDown={(e) => { if (e.key === 'Enter') handleLogin() }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </div>
+        {err && <div className="error-box">{err}</div>}
 
-          {error && (
-            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-center text-xs text-red-400">
-              {error}
-            </div>
-          )}
-
-          <Button
-            onClick={handleLogin}
-            disabled={loading}
-            className="w-full bg-red-600 text-white hover:bg-red-700"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Memproses...
-              </>
-            ) : (
-              <>
-                <Shield className="h-4 w-4" />
-                Masuk Superadmin
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
+        <button className="btn btn-red" onClick={submit} disabled={loading}>
+          {loading ? <><span className="spinner" /> Memproses...</> : <>🛡️ Masuk Superadmin</>}
+        </button>
+      </div>
     </div>
   )
 }
 
-// ─── Superadmin Dashboard ────────────────────────────────────────────
-function SuperAdminDashboard({ token }: { token: string }) {
+// ─── Bottom Sheet ─────────────────────────────────────────────────────
+function Sheet({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="sheet">
+        <div className="sheet-handle" />
+        {children}
+      </div>
+    </div>
+  )
+}
+
+// ─── Dashboard ────────────────────────────────────────────────────────
+function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
   const [screens, setScreens] = useState<ScreenInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-
-  // Dialog states
-  const [createOpen, setCreateOpen] = useState(false)
-  const [createId, setCreateId] = useState('')
-  const [createPassword, setCreatePassword] = useState('')
-  const [createOwnerName, setCreateOwnerName] = useState('')
-  const [createMosqueName, setCreateMosqueName] = useState('')
-  const [createError, setCreateError] = useState('')
-  const [createLoading, setCreateLoading] = useState(false)
-
-  const [changePwOpen, setChangePwOpen] = useState(false)
-  const [changePwId, setChangePwId] = useState('')
-  const [changePwPassword, setChangePwPassword] = useState('')
-  const [changePwError, setChangePwError] = useState('')
-  const [changePwLoading, setChangePwLoading] = useState(false)
-
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [deleteId, setDeleteId] = useState('')
-  const [deleteLoading, setDeleteLoading] = useState(false)
-
-  // Copy state
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
-  const fetchHeaders = useCallback(() => ({
+  // Modals
+  const [createOpen, setCreateOpen] = useState(false)
+  const [pwOpen, setPwOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [activeScreen, setActiveScreen] = useState<ScreenInfo | null>(null)
+
+  // Form states
+  const [fId, setFId] = useState('')
+  const [fPw, setFPw] = useState('')
+  const [fOwner, setFOwner] = useState('')
+  const [fMosque, setFMosque] = useState('')
+  const [fErr, setFErr] = useState('')
+  const [fLoading, setFLoading] = useState(false)
+
+  const headers = useCallback(() => ({
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,
   }), [token])
 
-  const fetchScreens = useCallback(async () => {
+  const load = useCallback(async () => {
     try {
-      const res = await fetch('/api/superadmin', {
-        headers: { 'Authorization': `Bearer ${token}` },
-      })
+      const res = await fetch('/api/superadmin', { headers: { Authorization: `Bearer ${token}` } })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Gagal mengambil data')
-      setScreens(data.screens)
-    } catch (err) {
-      console.error('Fetch screens error:', err)
-      toast.error('Gagal mengambil data perangkat')
-    }
+      if (res.ok) setScreens(data.screens)
+    } catch (e) { console.error(e) }
   }, [token])
 
-  useEffect(() => {
-    fetchScreens().finally(() => setLoading(false))
-  }, [fetchScreens])
+  useEffect(() => { load().finally(() => setLoading(false)) }, [load])
 
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true)
-    await fetchScreens()
-    setRefreshing(false)
-    toast.success('Data diperbarui')
-  }, [fetchScreens])
+  const refresh = async () => { setRefreshing(true); await load(); setRefreshing(false) }
 
-  const handleCreate = useCallback(async () => {
-    setCreateError('')
-    if (!createId || createId.length !== 4 || !/^\d{4}$/.test(createId)) {
-      setCreateError('ID harus 4 angka')
-      return
-    }
-    if (!createPassword || createPassword.length < 4) {
-      setCreateError('Password minimal 4 karakter')
-      return
-    }
-    setCreateLoading(true)
+  const copy = (text: string, key: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedId(key)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  const handleCreate = async () => {
+    setFErr('')
+    if (!fId || !/^\d{4}$/.test(fId)) { setFErr('ID harus 4 angka'); return }
+    if (!fPw || fPw.length < 4) { setFErr('Password minimal 4 karakter'); return }
+    setFLoading(true)
     try {
       const res = await fetch('/api/screens', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: createId, password: createPassword, ownerName: createOwnerName, mosqueName: createMosqueName }),
+        body: JSON.stringify({ id: fId, password: fPw, ownerName: fOwner, mosqueName: fMosque }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Gagal membuat perangkat')
-      toast.success(`Perangkat ${createId} berhasil dibuat!`)
+      if (!res.ok) throw new Error(data.error)
       setCreateOpen(false)
-      setCreateId('')
-      setCreatePassword('')
-      setCreateOwnerName('')
-      setCreateMosqueName('')
-      fetchScreens()
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Gagal'
-      setCreateError(msg)
-    } finally {
-      setCreateLoading(false)
-    }
-  }, [createId, createPassword, createOwnerName, createMosqueName, fetchScreens])
+      setFId(''); setFPw(''); setFOwner(''); setFMosque('')
+      await load()
+    } catch (e: unknown) {
+      setFErr(e instanceof Error ? e.message : 'Gagal')
+    } finally { setFLoading(false) }
+  }
 
-  const handleChangePassword = useCallback(async () => {
-    setChangePwError('')
-    if (!changePwPassword || changePwPassword.length < 4) {
-      setChangePwError('Password minimal 4 karakter')
-      return
-    }
-    setChangePwLoading(true)
+  const handleChangePw = async () => {
+    setFErr('')
+    if (!fPw || fPw.length < 4) { setFErr('Password minimal 4 karakter'); return }
+    setFLoading(true)
     try {
       const res = await fetch('/api/superadmin', {
         method: 'PATCH',
-        headers: fetchHeaders(),
-        body: JSON.stringify({ id: changePwId, password: changePwPassword }),
+        headers: headers(),
+        body: JSON.stringify({ id: activeScreen?.id, password: fPw }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Gagal mengubah password')
-      toast.success(`Password perangkat ${changePwId} berhasil diubah`)
-      setChangePwOpen(false)
-      setChangePwPassword('')
-      fetchScreens()
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Gagal'
-      setChangePwError(msg)
-    } finally {
-      setChangePwLoading(false)
-    }
-  }, [changePwId, changePwPassword, fetchHeaders, fetchScreens])
-
-  const handleDelete = useCallback(async () => {
-    setDeleteLoading(true)
-    try {
-      const res = await fetch(`/api/superadmin?id=${deleteId}`, {
-        method: 'DELETE',
-        headers: fetchHeaders(),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Gagal menghapus')
-      toast.success(`Perangkat ${deleteId} berhasil dihapus`)
-      setDeleteOpen(false)
-      fetchScreens()
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Gagal'
-      toast.error(msg)
-    } finally {
-      setDeleteLoading(false)
-    }
-  }, [deleteId, fetchHeaders, fetchScreens])
-
-  const copyToClipboard = useCallback((text: string, id: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopiedId(id)
-      setTimeout(() => setCopiedId(null), 2000)
-    })
-  }, [])
-
-  const openChangePassword = useCallback((screen: ScreenInfo) => {
-    setChangePwId(screen.id)
-    setChangePwPassword('')
-    setChangePwError('')
-    setChangePwOpen(true)
-  }, [])
-
-  const openDelete = useCallback((screen: ScreenInfo) => {
-    setDeleteId(screen.id)
-    setDeleteOpen(true)
-  }, [])
-
-  const handleLogout = useCallback(() => {
-    setToken(null)
-    toast.info('Keluar dari Superadmin')
-  }, [])
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-red-400" />
-          <span className="text-sm text-zinc-500">Memuat data...</span>
-        </div>
-      </div>
-    )
+      if (!res.ok) throw new Error(data.error)
+      setPwOpen(false); setFPw('')
+      await load()
+    } catch (e: unknown) {
+      setFErr(e instanceof Error ? e.message : 'Gagal')
+    } finally { setFLoading(false) }
   }
 
+  const handleDelete = async () => {
+    setFLoading(true)
+    try {
+      const res = await fetch(`/api/superadmin?id=${activeScreen?.id}`, {
+        method: 'DELETE', headers: headers(),
+      })
+      if (!res.ok) throw new Error('Gagal menghapus')
+      setDeleteOpen(false)
+      await load()
+    } catch (e) { console.error(e) }
+    finally { setFLoading(false) }
+  }
+
+  const openCreate = () => {
+    setFId(''); setFPw(''); setFOwner(''); setFMosque(''); setFErr('')
+    setCreateOpen(true)
+  }
+
+  const openPw = (s: ScreenInfo) => { setActiveScreen(s); setFPw(''); setFErr(''); setPwOpen(true) }
+  const openDelete = (s: ScreenInfo) => { setActiveScreen(s); setDeleteOpen(true) }
+
+  const fmt = (d: string) => new Date(d).toLocaleDateString('id-ID', {
+    day: 'numeric', month: 'short', year: 'numeric'
+  })
+
+  if (loading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: 12 }}>
+      <span className="spinner" style={{ width: 28, height: 28, borderWidth: 3, borderColor: 'rgba(255,255,255,0.2)', borderTopColor: 'var(--red)' }} />
+      <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Memuat data...</span>
+    </div>
+  )
+
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-950">
+    <div className="screen">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur-sm">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-red-400" />
-            <h1 className="text-sm font-semibold text-zinc-200">
-              Superadmin Panel
-            </h1>
-            <Badge className="border-red-500/30 bg-red-500/10 text-red-400 text-[10px]">
-              Admin
-            </Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/superadmin/themes">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 gap-1.5 text-[11px] text-zinc-400 hover:text-purple-400"
-              >
-                <Palette className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Theme Designer</span>
-              </Button>
-            </Link>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="h-8 gap-1 text-[11px] text-zinc-400 hover:text-zinc-200"
-            >
-              {refreshing ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : null}
-              Refresh
-            </Button>
-            <Link href="/">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 gap-1 text-[11px] text-zinc-400 hover:text-amber-400"
-              >
-                <Monitor className="h-3 w-3" />
-                Tampilan
-              </Button>
-            </Link>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              className="h-8 w-8 text-zinc-500 hover:text-red-400"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
+      <div className="header">
+        <div className="header-left">
+          <div className="header-icon">🛡️</div>
+          <span className="header-title">Superadmin</span>
+          <span className="badge badge-red">Owner</span>
         </div>
-      </header>
+        <div className="header-actions">
+          <Link href="/superadmin/themes">
+            <button className="btn btn-ghost" style={{ padding: '8px 12px', fontSize: 13 }}>
+              🎨 <span style={{ display: 'none' }}>Themes</span>
+            </button>
+          </Link>
+          <button className="btn btn-ghost" style={{ padding: '8px 12px', fontSize: 13 }} onClick={refresh} disabled={refreshing}>
+            {refreshing ? <span className="spinner" /> : '↻'}
+          </button>
+          <Link href="/">
+            <button className="btn btn-ghost" style={{ padding: '8px 12px', fontSize: 13 }}>📺</button>
+          </Link>
+          <button className="btn btn-ghost" style={{ padding: '8px 12px', fontSize: 13 }} onClick={onLogout}>
+            ↩️
+          </button>
+        </div>
+      </div>
 
       {/* Content */}
-      <ScrollArea className="flex-1">
-        <div className="mx-auto max-w-2xl space-y-4 p-4">
-          {/* Stats */}
-          <div className="flex items-center gap-4">
-            <div className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-              <div className="text-2xl font-bold text-zinc-100">{screens.length}</div>
-              <div className="text-xs text-zinc-500">Total Perangkat</div>
-            </div>
+      <div className="content">
+
+        {/* Stats */}
+        <div className="stats-row">
+          <div className="glass stat-card">
+            <div className="stat-num" style={{ color: 'var(--red)' }}>{screens.length}</div>
+            <div className="stat-label">Total Perangkat</div>
           </div>
-
-          {/* Action buttons */}
-          <div className="flex gap-2">
-            <Button
-              onClick={() => {
-                setCreateId('')
-                setCreatePassword('')
-                setCreateOwnerName('')
-                setCreateMosqueName('')
-                setCreateError('')
-                setCreateOpen(true)
-              }}
-              className="flex-1 bg-red-600 text-white hover:bg-red-700"
-            >
-              <Plus className="h-4 w-4" />
-              Tambah Perangkat
-            </Button>
+          <div className="glass stat-card">
+            <div className="stat-num" style={{ color: 'var(--green)' }}>{screens.length}</div>
+            <div className="stat-label">Aktif</div>
           </div>
-
-          <Separator className="bg-zinc-800" />
-
-          {/* Screen list */}
-          {screens.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Monitor className="h-12 w-12 text-zinc-800" />
-              <p className="mt-4 text-sm text-zinc-500">Belum ada perangkat terdaftar</p>
-              <p className="mt-1 text-xs text-zinc-600">
-                Klik &quot;Tambah Perangkat&quot; untuk menambahkan perangkat baru
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {screens.map((screen) => (
-                <Card key={screen.id} className="border-zinc-800 bg-zinc-900">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <Monitor className="h-4 w-4 text-zinc-500" />
-                          <span className="font-mono text-lg font-bold text-zinc-100">
-                            {screen.id}
-                          </span>
-                          <Badge className="border-zinc-700 bg-zinc-800 text-zinc-400 text-[10px]">
-                            Perangkat
-                          </Badge>
-                        </div>
-                        {screen.ownerName && (
-                          <div className="mt-1 text-xs text-zinc-400">
-                            <span className="text-zinc-500">Pemilik:</span> {screen.ownerName}
-                          </div>
-                        )}
-                        {screen.mosqueName && (
-                          <div className="mt-0.5 text-xs text-zinc-400">
-                            <span className="text-zinc-500">Masjid:</span> {screen.mosqueName}
-                          </div>
-                        )}
-                        <div className="mt-2 flex items-center gap-2">
-                          <Key className="h-3 w-3 text-zinc-600" />
-                          <span className="font-mono text-xs text-zinc-400">
-                            Password: {screen.password}
-                          </span>
-                          <button
-                            onClick={() => copyToClipboard(screen.password, `pw-${screen.id}`)}
-                            className="text-zinc-600 hover:text-zinc-400"
-                          >
-                            {copiedId === `pw-${screen.id}` ? (
-                              <Check className="h-3 w-3 text-green-400" />
-                            ) : (
-                              <Copy className="h-3 w-3" />
-                            )}
-                          </button>
-                        </div>
-                        <div className="mt-1 flex items-center gap-2 text-[10px] text-zinc-600">
-                          <span>Dibuat: {new Date(screen.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                          {screen.updatedAt && (
-                            <span>· Diubah: {new Date(screen.updatedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                          )}
-                        </div>
-                        {(screen.config as Record<string, unknown>)?.mosqueName && (
-                          <div className="mt-2 text-xs text-zinc-500">
-                            {String(screen.config.mosqueName)}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openChangePassword(screen)}
-                          className="h-8 w-8 text-zinc-600 hover:text-amber-400"
-                          title="Ubah Password"
-                        >
-                          <Key className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openDelete(screen)}
-                          className="h-8 w-8 text-zinc-600 hover:text-red-400"
-                          title="Hapus Perangkat"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
         </div>
-      </ScrollArea>
 
-      {/* Create Device Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="border-zinc-800 bg-zinc-900">
-          <DialogHeader>
-            <DialogTitle className="text-zinc-100">Tambah Perangkat Baru</DialogTitle>
-            <DialogDescription className="text-zinc-500">
-              Buat Device ID dan password untuk perangkat baru
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-xs text-zinc-400">Nama Pemilik</Label>
-              <Input
-                value={createOwnerName}
-                onChange={(e) => setCreateOwnerName(e.target.value)}
-                placeholder="Nama pemilik perangkat"
-                className="bg-zinc-800 border-zinc-700 text-sm text-zinc-200 placeholder:text-zinc-600"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs text-zinc-400">Nama Masjid</Label>
-              <Input
-                value={createMosqueName}
-                onChange={(e) => setCreateMosqueName(e.target.value)}
-                placeholder="Nama masjid"
-                className="bg-zinc-800 border-zinc-700 text-sm text-zinc-200 placeholder:text-zinc-600"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs text-zinc-400">ID Perangkat (4 angka)</Label>
-              <Input
-                value={createId}
-                onChange={(e) => setCreateId(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                placeholder="Contoh: 1234"
-                className="bg-zinc-800 border-zinc-700 text-sm text-zinc-200 font-mono placeholder:text-zinc-600"
-                maxLength={4}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs text-zinc-400">Password</Label>
-              <Input
-                type="text"
-                value={createPassword}
-                onChange={(e) => setCreatePassword(e.target.value)}
-                placeholder="Minimal 4 karakter"
-                className="bg-zinc-800 border-zinc-700 text-sm text-zinc-200 placeholder:text-zinc-600"
-              />
-            </div>
-            {createError && (
-              <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-center text-xs text-red-400">
-                {createError}
-              </div>
-            )}
+        {/* Add */}
+        <button className="btn add-btn" onClick={openCreate}>
+          ＋ Tambah Perangkat
+        </button>
+
+        {/* List */}
+        {screens.length === 0 ? (
+          <div className="empty">
+            <div className="empty-icon">📺</div>
+            <div className="empty-title">Belum ada perangkat</div>
+            <div className="empty-sub">Tap tombol di atas untuk menambahkan perangkat baru</div>
           </div>
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setCreateOpen(false)}
-              className="text-zinc-400"
-            >
-              Batal
-            </Button>
-            <Button
-              onClick={handleCreate}
-              disabled={createLoading}
-              className="bg-red-600 text-white hover:bg-red-700"
-            >
-              {createLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Membuat...
-                </>
-              ) : (
-                'Buat Perangkat'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        ) : (
+          <>
+            <div className="section-header">Perangkat Terdaftar ({screens.length})</div>
+            {screens.map(s => (
+              <div key={s.id} className="glass device-card">
+                <div className="device-header">
+                  <div className="device-id-row">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>ID</span>
+                      <span className="device-id-badge">{s.id}</span>
+                    </div>
+                    <span className="badge badge-green">Aktif</span>
+                  </div>
+                  <div className="device-actions">
+                    <button className="btn btn-icon warning" onClick={() => openPw(s)} title="Ubah Password">🔑</button>
+                    <button className="btn btn-icon danger" onClick={() => openDelete(s)} title="Hapus">🗑️</button>
+                  </div>
+                </div>
 
-      {/* Change Password Dialog */}
-      <Dialog open={changePwOpen} onOpenChange={setChangePwOpen}>
-        <DialogContent className="border-zinc-800 bg-zinc-900">
-          <DialogHeader>
-            <DialogTitle className="text-zinc-100">
-              Ubah Password — {changePwId}
-            </DialogTitle>
-            <DialogDescription className="text-zinc-500">
-              Masukkan password baru untuk perangkat ini
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-xs text-zinc-400">Password Baru</Label>
-              <Input
-                type="text"
-                value={changePwPassword}
-                onChange={(e) => setChangePwPassword(e.target.value)}
-                placeholder="Minimal 4 karakter"
-                className="bg-zinc-800 border-zinc-700 text-sm text-zinc-200 placeholder:text-zinc-600"
-              />
-            </div>
-            {changePwError && (
-              <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-center text-xs text-red-400">
-                {changePwError}
+                <div className="device-info">
+                  {s.ownerName && (
+                    <div className="device-info-row">
+                      <span className="device-info-label">Pemilik</span>
+                      <span className="device-info-val">{s.ownerName}</span>
+                    </div>
+                  )}
+                  {s.mosqueName && (
+                    <div className="device-info-row">
+                      <span className="device-info-label">Masjid</span>
+                      <span className="device-info-val">{s.mosqueName}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pw-row">
+                  <span className="pw-label">Password</span>
+                  <span className="pw-val">{s.password}</span>
+                  <button
+                    className={`copy-btn ${copiedId === `pw-${s.id}` ? 'copied' : ''}`}
+                    onClick={() => copy(s.password, `pw-${s.id}`)}
+                  >
+                    {copiedId === `pw-${s.id}` ? '✓' : '⎘'}
+                  </button>
+                </div>
+
+                <div className="device-date">
+                  Dibuat {fmt(s.createdAt)}
+                  {s.updatedAt && ` · Diubah ${fmt(s.updatedAt)}`}
+                </div>
               </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setChangePwOpen(false)}
-              className="text-zinc-400"
-            >
-              Batal
-            </Button>
-            <Button
-              onClick={handleChangePassword}
-              disabled={changePwLoading}
-              className="bg-amber-500 text-black hover:bg-amber-600"
-            >
-              {changePwLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Menyimpan...
-                </>
-              ) : (
-                'Simpan Password'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            ))}
+          </>
+        )}
+      </div>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent className="border-zinc-800 bg-zinc-900">
-          <DialogHeader>
-            <DialogTitle className="text-red-400">Hapus Perangkat?</DialogTitle>
-            <DialogDescription className="text-zinc-500">
-              Perangkat dengan ID <strong className="text-zinc-300">{deleteId}</strong> akan dihapus permanen beserta semua konfigurasinya. Tindakan ini tidak dapat dibatalkan.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setDeleteOpen(false)}
-              className="text-zinc-400"
-            >
-              Batal
-            </Button>
-            <Button
-              onClick={handleDelete}
-              disabled={deleteLoading}
-              variant="destructive"
-            >
-              {deleteLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Menghapus...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="h-4 w-4" />
-                  Hapus Permanen
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* ── Sheet: Create ── */}
+      {createOpen && (
+        <Sheet onClose={() => setCreateOpen(false)}>
+          <div className="sheet-title">Tambah Perangkat</div>
+          <div className="sheet-sub">Buat ID dan password untuk masjid baru</div>
+
+          <div className="input-wrap">
+            <label className="input-label">Nama Pemilik</label>
+            <input className="input-field" value={fOwner} onChange={e => setFOwner(e.target.value)} placeholder="Nama pemilik / pengurus" />
+          </div>
+          <div className="input-wrap">
+            <label className="input-label">Nama Masjid</label>
+            <input className="input-field" value={fMosque} onChange={e => setFMosque(e.target.value)} placeholder="Nama masjid" />
+          </div>
+          <div className="input-wrap">
+            <label className="input-label">ID Perangkat (4 angka)</label>
+            <input
+              className="input-field"
+              value={fId}
+              onChange={e => setFId(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              placeholder="Contoh: 1234"
+              maxLength={4}
+              style={{ fontVariantNumeric: 'tabular-nums', letterSpacing: '4px', fontSize: 20, fontWeight: 700 }}
+            />
+          </div>
+          <div className="input-wrap">
+            <label className="input-label">Password</label>
+            <input className="input-field" value={fPw} onChange={e => setFPw(e.target.value)} placeholder="Minimal 4 karakter" />
+          </div>
+
+          {fErr && <div className="error-box">{fErr}</div>}
+
+          <div className="sheet-footer">
+            <button className="btn btn-ghost" onClick={() => setCreateOpen(false)}>Batal</button>
+            <button className="btn btn-red" onClick={handleCreate} disabled={fLoading}>
+              {fLoading ? <><span className="spinner" /> Membuat...</> : 'Buat Perangkat'}
+            </button>
+          </div>
+        </Sheet>
+      )}
+
+      {/* ── Sheet: Change PW ── */}
+      {pwOpen && (
+        <Sheet onClose={() => setPwOpen(false)}>
+          <div className="sheet-title">Ubah Password</div>
+          <div className="sheet-sub">Perangkat ID: <strong style={{ color: 'var(--text-primary)' }}>{activeScreen?.id}</strong></div>
+
+          <div className="input-wrap">
+            <label className="input-label">Password Baru</label>
+            <input className="input-field" value={fPw} onChange={e => setFPw(e.target.value)} placeholder="Minimal 4 karakter" />
+          </div>
+
+          {fErr && <div className="error-box">{fErr}</div>}
+
+          <div className="sheet-footer">
+            <button className="btn btn-ghost" onClick={() => setPwOpen(false)}>Batal</button>
+            <button className="btn btn-amber" onClick={handleChangePw} disabled={fLoading}>
+              {fLoading ? <><span className="spinner" /> Menyimpan...</> : '🔑 Simpan Password'}
+            </button>
+          </div>
+        </Sheet>
+      )}
+
+      {/* ── Sheet: Delete ── */}
+      {deleteOpen && (
+        <Sheet onClose={() => setDeleteOpen(false)}>
+          <div className="sheet-title" style={{ color: 'var(--red)' }}>Hapus Perangkat?</div>
+          <div className="sheet-sub">
+            Perangkat <strong style={{ color: 'var(--text-primary)' }}>ID {activeScreen?.id}</strong> ({activeScreen?.mosqueName || 'tanpa nama'}) akan dihapus permanen beserta semua konfigurasinya. Tindakan ini tidak dapat dibatalkan.
+          </div>
+
+          <div className="sheet-footer">
+            <button className="btn btn-ghost" onClick={() => setDeleteOpen(false)}>Batal</button>
+            <button className="btn btn-destructive" onClick={handleDelete} disabled={fLoading}>
+              {fLoading ? <><span className="spinner" /> Menghapus...</> : '🗑️ Hapus Permanen'}
+            </button>
+          </div>
+        </Sheet>
+      )}
     </div>
   )
 }
 
-// ─── Main Export ──────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────
 export default function SuperAdminPanel() {
   const [token, setToken] = useState<string | null>(null)
 
-  if (!token) {
-    return <SuperAdminLogin onLogin={setToken} />
-  }
-
-  return <SuperAdminDashboard token={token} />
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: styles }} />
+      <div className="bg-mesh" />
+      {!token
+        ? <Login onLogin={setToken} />
+        : <Dashboard token={token} onLogout={() => setToken(null)} />
+      }
+    </>
+  )
 }
